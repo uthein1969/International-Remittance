@@ -4,8 +4,9 @@ from supabase import create_client, Client
 import pandas as pd
 
 # --- ၁။ Supabase ချိတ်ဆက်မှု ---
-URL = "https://tjkykxuvczmctmxxurew.supabase.co"
-KEY = "သင်၏_Supabase_Anon_Key_အပြည့်အစုံ" # သင့် Key ကို ဤနေရာတွင် အစားထိုးပါ
+URL = "https://tjkykxuvczmctmxxurew.supabase.co".strip()
+KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InRqa3lreHV2Y3ptY3RteHh1cmV3Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3Njk4NjA5NjYsImV4cCI6MjA4NTQzNjk2Nn0.RYyYOZFAOoSLRe6WCgupj0VnujfcC6XpweZM0S9tJz4
+" # သင့် Key ကို ဤနေရာတွင် အစားထိုးပါ
 supabase: Client = create_client(URL, KEY)
 
 # --- ၂။ စနစ်လုံခြုံရေး (Password သတ်မှတ်ခြင်း) ---
