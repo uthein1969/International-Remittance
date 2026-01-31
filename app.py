@@ -20,7 +20,7 @@ st.markdown("""
     .main { background-color: #f5f7f9; }
     .stButton>button { width: 100%; border-radius: 5px; background-color: #007bff; color: white; }
     </style>
-    """, unsafe_allow_all_headers=True)
+    """, unsafe_allow_html=True)
 
 # --- ၃။ Login စစ်ဆေးခြင်း ---
 if not st.session_state.logged_in:
