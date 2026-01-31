@@ -88,6 +88,8 @@ with right_col:
             st.info("No data available.")
     except Exception as e:
         st.error(f"Failed to fetch data: {e}")
-                    supabase.table("blacklist").delete().eq("srno", selected_row['srno']).execute() #
-                    st.warning("Deleted!")
-                    st.rerun()
+                    if st.button("🗑️ Delete"):
+    # ဤစာကြောင်းသည် အပေါ်က if ထက် space ၄ ခု ပိုဝင်နေရပါမည်
+    supabase.table("blacklist").delete().eq("srno", selected_row['srno']).execute() 
+    st.warning("Deleted!")
+    st.rerun()
