@@ -9,7 +9,7 @@ supabase: Client = create_client(URL, KEY)
 
 ADMIN_PASSWORD = "admin123" # သင်နှစ်သက်ရာ Password ပြောင်းလဲနိုင်သည်
 
-st.set_page_config(page_title="Secure Blacklist System", layout="wide")
+st.set_page_config(page_title="International Remittance System", layout="wide")
 
 # Session State ဖြင့် Login အခြေအနေကို မှတ်ထားခြင်း
 if 'logged_in' not in st.session_state:
@@ -40,7 +40,7 @@ else:
         st.session_state.logged_in = False
         st.rerun()
 
-    st.title("🌏 International Remittance - Blacklist System")
+    st.title("🌏 International Remittance System")
     st.markdown("---")
 
     # --- ၄။ Stats & Layout ---
