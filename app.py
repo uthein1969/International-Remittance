@@ -54,7 +54,7 @@ else:
     with tab1:
         search = st.text_input("🔍 Search by Name or NRC", placeholder="Enter details...")
         try:
-            res = supabase.table("blacklist").select("*").order("srno", desc=True).execute()
+            res = supabase.table("blacklist").select("*").order("srno", desc=False).execute()
             if res.data:
                 df = pd.DataFrame(res.data)
                 if search:
