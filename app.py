@@ -73,35 +73,33 @@ else:
     with tab2:
         col_add, col_edit = st.columns(2)
         
-        with col_add:
-            st.subheader("➕ Add New Entry")
-            with st.form("add_form", clear_on_submit=True):
-                name = st.text_input("Full Name")
-                nrc = st.text_input("NRC Number")
-                remark = st.text_area("Remark")
-                with st.form("new_entry_form", clear_on_submit=True):
-            name = st.text_input("👤 Full Name", placeholder="Enter name")
-            nrc = st.text_input("💳 NRC Number", placeholder="Example: 12/DAGAMA(N)123456")
-            remark = st.text_area("📝 Remark", placeholder="Any additional notes...")
-            
-            submit = st.form_submit_button("Submit to Database")
-            if submit: # Line 82
-                if name and nrc: # Line 83 (Space ၄ ခု ဝင်ထားရပါမည်)
-                    try:
-                        # ၁။ NRC တူမတူ အရင်စစ်ဆေးခြင်း
-                        check_res = supabase.table("blacklist").select("nrcno").eq("nrcno", nrc).execute()
-                        
-                        if len(check_res.data) > 0:
-                            st.error(f"⚠️ ဤမှတ်ပုံတင်နံပါတ် ({nrc}) သည် Database ထဲတွင် ရှိပြီးသားဖြစ်ပါသည်။")
-                        else:
-                            # ၂။ မရှိမှသာ အသစ်သွင်းပါ
-                            supabase.table("blacklist").insert({"name": name, "nrcno": nrc, "remark": remark}).execute()
-                            st.success(f"Successfully added {name}!")
-                            st.rerun()
-                    except Exception as e:
-                        st.error(f"Error: {e}")
-                else:
-                    st.warning("Name and NRC are required!")
+        with left_col:
+        st.subheader("➕ New Registration")
+        with st.container(border=True): 
+            # အောက်ပါ စာကြောင်းများအားလုံးသည် 'with' အောက်တွင် Space ၄ ခုစီ ဝင်ရပါမည်
+            with st.form("new_entry_form", clear_on_submit=True):
+                name = st.text_input("👤 Full Name", placeholder="Enter name")
+                nrc = st.text_input("💳 NRC Number", placeholder="Example: 12/DAGAMA(N)123456")
+                remark = st.text_area("📝 Remark", placeholder="Any additional notes...")
+                
+                submit = st.form_submit_button("Submit to Database")
+                if submit:
+                    if name and nrc:
+                        try:
+                            # ၁။ NRC တူမတူ အရင်စစ်ဆေးခြင်း
+                            check_res = supabase.table("blacklist").select("nrcno").eq("nrcno", nrc).execute()
+                            
+                            if len(check_res.data) > 0:
+                                st.error(f"⚠️ ဤမှတ်ပုံတင်နံပါတ် ({nrc}) သည် ရှိပြီးသားဖြစ်ပါသည်။")
+                            else:
+                                # ၂။ မရှိမှသာ အသစ်သွင်းပါ
+                                supabase.table("blacklist").insert({"name": name, "nrcno": nrc, "remark": remark}).execute()
+                                st.success(f"Successfully added {name}!")
+                                st.rerun()
+                        except Exception as e:
+                            st.error(f"Error: {e}")
+                    else:
+                        st.warning("Name and NRC are required!")
 
         with col_edit:
             st.subheader("🛠️ Edit or Delete")
