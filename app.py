@@ -87,7 +87,7 @@ else:
             
             # ၂။ အကယ်၍ NRC တူတာ ရှိနေရင် သိမ်းခွင့်မပြုပါ
             if len(check_res.data) > 0:
-                st.error(f"⚠️ ဤမှတ်ပုံတင်နံပါတ် ({nrc}) သည် Database ထဲတွင် ရှိပြီးသားဖြစ်ပါသည်။")
+                st.error(f"ဤမှတ်ပုံတင်နံပါတ် ({nrc}) သည် Database ထဲတွင် ရှိပြီးသားဖြစ်ပါသည်။")
             else:
                 # ၃။ မရှိမှသာ အသစ်သွင်းပါ
                 supabase.table("blacklist").insert({"name": name, "nrcno": nrc, "remark": remark}).execute()
