@@ -80,12 +80,23 @@ else:
                 nrc = st.text_input("NRC Number")
                 remark = st.text_area("Remark")
                 if st.form_submit_button("Save to Database"):
-                    if name and nrc:
-                        supabase.table("blacklist").insert({"name": name, "nrcno": nrc, "remark": remark}).execute()
-                        st.success("Successfully added!")
-                        st.rerun()
-                    else:
-                        st.warning("Fields cannot be empty!")
+    if name and nrc:
+        try:
+            # ၁။ Database ထဲမှာ အဲဒီ NRC ရှိမရှိ အရင်စစ်ဆေးပါ
+            check_res = supabase.table("blacklist").select("nrcno").eq("nrcno", nrc).execute()
+            
+            # ၂။ အကယ်၍ NRC တူတာ ရှိနေရင် သိမ်းခွင့်မပြုပါ
+            if len(check_res.data) > 0:
+                st.error(f"⚠️ ဤမှတ်ပုံတင်နံပါတ် ({nrc}) သည် Database ထဲတွင် ရှိပြီးသားဖြစ်ပါသည်။")
+            else:
+                # ၃။ မရှိမှသာ အသစ်သွင်းပါ
+                supabase.table("blacklist").insert({"name": name, "nrcno": nrc, "remark": remark}).execute()
+                st.success(f"Successfully added {name}!")
+                st.rerun()
+        except Exception as e:
+            st.error(f"Error: {e}")
+    else:
+        st.warning("Name and NRC are required!")
 
         with col_edit:
             st.subheader("🛠️ Edit or Delete")
