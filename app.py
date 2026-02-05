@@ -45,7 +45,7 @@ if st.sidebar.button("Logout"):
     st.rerun()
 
 st.sidebar.title("🚀 Main Menu")
-page = st.sidebar.radio("Go to:", ["📊 Dashboard", "📋 Blacklist Info", "🏦 Inward Transaction"])
+page = st.sidebar.radio("Go to:", ["📊 Dashboard", "🔍 Search Transactions", "📋 Blacklist Info", "🏦 Inward Transaction"])
 st.sidebar.markdown("---")
 st.sidebar.info("System Version 2.0v")
 
@@ -105,7 +105,61 @@ if page == "📊 Dashboard":
     y1.error(f"### {yearly_sum:,.2f} \n 📊 Yearly Inward")
     y2.error(f"### 0.00 \n 📊 Yearly Outward")
 
-# --- ၄။ Blacklist System Page ---
+# --- ၅။ Search Transactions Page Logic ---
+if page == "🔍 Search Transactions":
+    st.title("🔍 Search & Filter Transactions")
+    st.markdown("ရက်စွဲအလိုက် ငွေလွှဲစာရင်းများကို ရှာဖွေရန်")
+
+    # Search Filters
+    with st.container(border=True):
+        col1, col2, col3 = st.columns([2, 2, 1])
+        with col1:
+            s_date = st.date_input("Start Date", value=now_yangon.date())
+        with col2:
+            e_date = st.date_input("End Date", value=now_yangon.date())
+        with col3:
+            st.write("##")
+            btn_search = st.button("Search Now", type="primary", use_container_width=True)
+
+    # Database မှ ဒေတာရှာဖွေခြင်း
+    try:
+        # ဒေတာအားလုံးကို အရင်ယူသည် (သို့မဟုတ် date အလိုက် filter တိုက်ရိုက်လုပ်နိုင်သည်)
+        res = supabase.table("inward_transactions").select("*").order("created_at", desc=True).execute()
+        
+        if res.data:
+            df_search = pd.DataFrame(res.data)
+            # Date format ပြောင်းလဲခြင်း
+            df_search['created_at'] = pd.to_datetime(df_search['created_at']).dt.tz_convert('Asia/Yangon')
+            df_search['Date'] = df_search['created_at'].dt.date
+            
+            # Button နှိပ်မှ Filter လုပ်ခြင်း
+            if btn_search:
+                mask = (df_search['Date'] >= s_date) & (df_search['Date'] <= e_date)
+                result_df = df_search.loc[mask]
+                
+                if not result_df.empty:
+                    st.success(f"Found {len(result_df)} transactions.")
+                    # လိုအပ်သော Column များကိုသာ ရွေးပြခြင်း
+                    display_cols = [
+                        'transaction_no', 'branch', 'r_name', 'r_nrc', 
+                        's_name', 'amount', 'currency', 'total_mmk', 'Date'
+                    ]
+                    st.dataframe(result_df[display_cols], use_container_width=True)
+                    
+                    # Excel ထုတ်ရန် Download Button (Optional)
+                    csv = result_df.to_csv(index=False).encode('utf-8')
+                    st.download_button("📥 Download as CSV", data=csv, file_name="search_results.csv", mime="text/csv")
+                else:
+                    st.warning("ရွေးချယ်ထားသော ရက်စွဲအတွင်း ဒေတာမရှိပါ။")
+            else:
+                st.info("ရှာဖွေရန် ရက်စွဲရွေးပြီး Search Now ကို နှိပ်ပါ။")
+        else:
+            st.info("Database ထဲတွင် ဒေတာမရှိသေးပါ။")
+            
+    except Exception as e:
+        st.error(f"Search Error: {e}")
+
+# --- ၆။ Blacklist System Page ---
 if page == "📋 Blacklist Info":
     st.title("🌏 Blacklist Management")
     tab1, tab2 = st.tabs(["📊 View & Search", "⚙️ Management"])
@@ -183,7 +237,7 @@ if page == "📋 Blacklist Info":
             else:
                 st.info("No records found to edit.")
 
-# --- ၅။ Inward Transaction Page ---
+# --- ၇။ Inward Transaction Page ---
 elif page == "🏦 Inward Transaction":
     st.title("🏦 Inward Transaction")
     yangon_tz = pytz.timezone('Asia/Yangon')
@@ -252,7 +306,7 @@ elif page == "🏦 Inward Transaction":
     st.subheader("📤 Upload File")
     uploaded_file = st.file_uploader("Choose File", type=['png', 'jpg', 'pdf'])
 
-    # --- ၅။ SAVE ACTION ---
+    # --- ၈။ SAVE ACTION ---
     if st.button("💾 Save", type="primary"):
         if r_nrc:
             # Blacklist စစ်ဆေးခြင်း
