@@ -1,5 +1,6 @@
 import pandas as pd
 import streamlit as st
+import pytz
 from supabase import create_client, Client
 from datetime import datetime
 
@@ -83,11 +84,13 @@ if page == "📋 Blacklist Info":
 # --- ၅။ Inward Transaction Page ---
 elif page == "🏦 Inward Transaction":
     st.title("🏦 Inward Transaction")
-    
+    yangon_tz = pytz.timezone('Asia/Yangon')
+    now_yangon = datetime.now(yangon_tz)
+    formatted_time = now_yangon.strftime("%Y-%m-%d %H:%M:%S")
     # --- ၁။ Header Information ---
     h_col1, h_col2, h_col3 = st.columns(3)
     with h_col1:
-        st.text_input("Date:", value=datetime.now().strftime("%Y-%m-%d %H:%M:%S"), disabled=True)
+        st.text_input("Date:", value=formatted_time, disabled=True)
     with h_col2:
         branch = st.selectbox("Select Branch", ["", "Yangon Branch", "Mandalay Branch", "Nay Pyi Taw Branch"])
     with h_col3:
