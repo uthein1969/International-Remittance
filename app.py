@@ -10,7 +10,7 @@ supabase: Client = create_client(URL, KEY)
 
 ADMIN_PASSWORD = "admin123" # သင်နှစ်သက်ရာ Password ပြောင်းလဲနိုင်သည်
 
-st.set_page_config(page_title="RBL Remittance System", layout="wide")
+st.set_page_config(page_title="Remittance System", layout="wide")
 
 # Session State ဖြင့် Login အခြေအနေကို မှတ်ထားခြင်း
 if 'logged_in' not in st.session_state:
@@ -18,7 +18,7 @@ if 'logged_in' not in st.session_state:
 
 # --- ၂။ Login Page (Login မဝင်ရသေးခင် ပြသမည့်အပိုင်း) ---
 if not st.session_state.logged_in:
-    st.title("🔐 Secure Login - RBL System")
+    st.title("🔐 Secure Login - Remittance System")
     col_l1, col_l2, col_l3 = st.columns([1, 2, 1])
     
     with col_l2:
@@ -41,13 +41,13 @@ if st.sidebar.button("Logout"):
     st.rerun()
 
 st.sidebar.title("🚀 Main Menu")
-page = st.sidebar.radio("Go to:", ["📋 Blacklist System", "🏦 Inward Transaction"])
+page = st.sidebar.radio("Go to:", ["📋 Blacklist Info", "🏦 Inward Transaction"])
 st.sidebar.markdown("---")
 st.sidebar.info("System Version 2.0v")
 
 # --- ၄။ Blacklist System Page ---
-if page == "📋 Blacklist System":
-    st.title("🌏 Blacklist Management System")
+if page == "📋 Blacklist Info":
+    st.title("🌏 Blacklist Management")
     tab1, tab2 = st.tabs(["📊 View & Search", "⚙️ Management"])
     
     with tab1:
@@ -82,7 +82,7 @@ if page == "📋 Blacklist System":
 
 # --- ၅။ Inward Transaction Page ---
 elif page == "🏦 Inward Transaction":
-    st.title("🏦 RBL Inward Transaction System")
+    st.title("🏦 Inward Transaction")
     
     # --- ၁။ Header Information ---
     h_col1, h_col2, h_col3 = st.columns(3)
