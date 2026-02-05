@@ -172,6 +172,19 @@ elif page == "🏦 Inward Transaction":
     yangon_tz = pytz.timezone('Asia/Yangon')
     now_yangon = datetime.now(yangon_tz)
     formatted_time = now_yangon.strftime("%Y-%m-%d %H:%M:%S")
+    # ၁။ နောက်ဆုံး Transaction No ကို Database မှ ဆွဲထုတ်ခြင်း
+    try:
+        # inward_transactions table မှ နောက်ဆုံးသွင်းထားသော data ကို ယူသည်
+        last_trans = supabase.table("inward_transactions").select("transaction_no").order("created_at", desc=True).limit(1).execute()
+        
+        if last_trans.data:
+            # နောက်ဆုံးနံပါတ်ကို integer ပြောင်းပြီး ၁ ပေါင်းသည်
+            last_no = int(last_trans.data[0]['transaction_no'])
+            new_no = f"{last_no + 1:04d}" # 0001, 0002 ပုံစံဖြစ်အောင် 0 လေးလုံး format သတ်မှတ်သည်
+        else:
+            new_no = "0001" # Table ထဲမှာ ဘာမှမရှိသေးရင် 0001 က စမည်
+    except Exception:
+        new_no = "0001" # Error တက်ခဲ့ရင်လည်း 0001 ကပင် စမည်
     # --- ၁။ Header Information ---
     h_col1, h_col2, h_col3 = st.columns(3)
     with h_col1:
