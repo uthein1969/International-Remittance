@@ -55,49 +55,55 @@ if page == "📊 Dashboard":
     st.markdown(f"**Last Updated:** {now_yangon.strftime('%Y-%m-%d %H:%M:%S')} (Yangon Time)")
 
     try:
-        # ၁။ ဒေတာအားလုံးကို ဆွဲထုတ်ခြင်း
+        # ၁။ ဒေတာဆွဲထုတ်ခြင်း (Column name များအား သေချာစွာ စစ်ဆေးပါ)
         res = supabase.table("inward_transactions").select("amount, created_at").execute()
-        df_dash = pd.DataFrame(res.data)
-
-        if not df_dash.empty:
-            # Date format ပြောင်းလဲခြင်း
+        
+        if res.data:
+            df_dash = pd.DataFrame(res.data)
+            
+            # ၂။ Date Conversion (Yangon Time သို့ ပြောင်းလဲခြင်း)
             df_dash['created_at'] = pd.to_datetime(df_dash['created_at']).dt.tz_convert('Asia/Yangon')
+            
+            # ယနေ့ရက်စွဲ၊ လ၊ နှစ် ကို သတ်မှတ်ခြင်း
             today = now_yangon.date()
             this_month = now_yangon.month
             this_year = now_yangon.year
 
-            # ၂။ တွက်ချက်ခြင်း (Daily, Monthly, Yearly)
+            # ၃။ Filtering & Summing (ဂဏန်းများ ပေါင်းခြင်း)
             daily_sum = df_dash[df_dash['created_at'].dt.date == today]['amount'].sum()
             monthly_sum = df_dash[(df_dash['created_at'].dt.month == this_month) & 
                                   (df_dash['created_at'].dt.year == this_year)]['amount'].sum()
             yearly_sum = df_dash[df_dash['created_at'].dt.year == this_year]['amount'].sum()
+            
+            # စမ်းသပ်ရန်အတွက် Data ရှိပါက Console တွင်ပြရန်
+            # st.write(f"Debug: Found {len(df_dash)} records") 
         else:
             daily_sum = monthly_sum = yearly_sum = 0
+            st.info("ℹ️ Database ထဲတွင် Transaction data မရှိသေးပါ။")
+
     except Exception as e:
-        st.error(f"Dashboard Error: {e}")
+        st.error(f"❌ Dashboard Error: {e}")
         daily_sum = monthly_sum = yearly_sum = 0
 
-    # --- ၃။ UI ပြသခြင်း (ရောင်စုံ Card များ) ---
+    # --- ၄။ UI Display (ရောင်စုံ Card များ) ---
     st.subheader("Daily Transaction")
-    d_col1, d_col2 = st.columns(2)
-    # Amount ကို 0,000 ပုံစံ ကော်မာလေးတွေနဲ့ ပြသပါမည်
-    d_col1.info(f"### {daily_sum:,.2f} \n 📉 Daily Inward")
-    d_col2.info(f"### 0 \n 📉 Daily Outward")
+    d1, d2 = st.columns(2)
+    d1.info(f"### {daily_sum:,.2f} \n 📉 Daily Inward")
+    d2.info(f"### 0.00 \n 📉 Daily Outward")
 
     st.divider()
 
     st.subheader("Monthly Transaction")
-    m_col1, m_col2 = st.columns(2)
-    # ပုံထဲက 1118 ကဲ့သို့သော နေရာတွင် အစစ်အမှန် ဒေတာ ပေါ်လာပါမည်
-    m_col1.warning(f"### {monthly_sum:,.2f} \n 📈 Monthly Inward") 
-    m_col2.warning(f"### 0 \n 📈 Monthly Outward")
+    m1, m2 = st.columns(2)
+    m1.warning(f"### {monthly_sum:,.2f} \n 📈 Monthly Inward") 
+    m2.warning(f"### 0.00 \n 📈 Monthly Outward")
 
     st.divider()
 
     st.subheader("Yearly Transaction")
-    y_col1, y_col2 = st.columns(2)
-    y_col1.error(f"### {yearly_sum:,.2f} \n 📊 Yearly Inward")
-    y_col2.error(f"### 0 \n 📊 Yearly Outward")
+    y1, y2 = st.columns(2)
+    y1.error(f"### {yearly_sum:,.2f} \n 📊 Yearly Inward")
+    y2.error(f"### 0.00 \n 📊 Yearly Outward")
 
 # --- ၄။ Blacklist System Page ---
 if page == "📋 Blacklist Info":
