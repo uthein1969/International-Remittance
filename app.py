@@ -77,7 +77,7 @@ if page == "📊 Dashboard":
     
     mb1, mb2 = st.columns(2)
     # ဥပမာ ဒေတာ ၁၁၁၈ အား ပြသခြင်း
-    mb1.warning("### 1118 \n 📈 Monthly Inward") 
+    mb1.warning("### 0 \n 📈 Monthly Inward") 
     mb2.warning("### 0 \n 📈 Monthly Outward")
 
     st.divider()
