@@ -108,20 +108,63 @@ if page == "📋 Blacklist Info":
             st.error(f"Error: {e}")
 
     with tab2:
-        with st.form("blacklist_form", clear_on_submit=True):
-            st.subheader("➕ Add New Blacklist")
-            name = st.text_input("Name")
-            nrc = st.text_input("NRC Number")
-            remark = st.text_area("Remark")
-            if st.form_submit_button("Save to Blacklist"):
-                if name and nrc:
-                    check = supabase.table("blacklist").select("nrcno").eq("nrcno", nrc).execute()
-                    if len(check.data) > 0:
-                        st.error(f"⚠️ {nrc} သည် ရှိပြီးသား ဖြစ်ပါသည်။")
-                    else:
-                        supabase.table("blacklist").insert({"name": name, "nrcno": nrc, "remark": remark}).execute()
-                        st.success("Successfully added to blacklist!")
+        col_new, col_mod = st.columns(2)
+        
+        # ၁။ Blacklist အသစ်ထည့်သည့်အပိုင်း
+        with col_new:
+            with st.form("add_new_form", clear_on_submit=True):
+                st.subheader("➕ Add New Blacklist")
+                name = st.text_input("Name")
+                nrc = st.text_input("NRC Number")
+                remark = st.text_area("Remark")
+                if st.form_submit_button("Save to Blacklist"):
+                    if name and nrc:
+                        # NRC တူမတူ စစ်ဆေးခြင်း
+                        check = supabase.table("blacklist").select("nrcno").eq("nrcno", nrc).execute()
+                        if len(check.data) > 0:
+                            st.error(f"⚠️ {nrc} သည် ရှိပြီးသား ဖြစ်ပါသည်။")
+                        else:
+                            supabase.table("blacklist").insert({"name": name, "nrcno": nrc, "remark": remark}).execute()
+                            st.success("Successfully added!")
+                            st.rerun()
+
+        # ၂။ Edit & Delete ပြုလုပ်သည့်အပိုင်း
+        with col_mod:
+            st.subheader("🛠️ Edit or Delete")
+            # Database ထဲမှ data များအားလုံးကို ဆွဲထုတ်ခြင်း
+            res_all = supabase.table("blacklist").select("*").execute()
+            
+            if res_all.data:
+                # ရွေးချယ်ရလွယ်ကူအောင် အမည်နှင့် NRC ကို တွဲပြခြင်း
+                options = {f"{r['name']} ({r['nrcno']})": r for r in res_all.data}
+                choice = st.selectbox("Select Record to Modify", options.keys())
+                selected = options[choice]
+
+                # ရွေးချယ်လိုက်သော ဒေတာများကို Form ထဲတွင် ပြန်ပြခြင်း
+                with st.container(border=True):
+                    edit_name = st.text_input("Update Name", value=selected['name'])
+                    edit_nrc = st.text_input("Update NRC", value=selected['nrcno'])
+                    edit_remark = st.text_area("Update Remark", value=selected['remark'])
+                    
+                    btn_col1, btn_col2 = st.columns(2)
+                    
+                    # ပြင်ဆင်ရန် (Update)
+                    if btn_col1.button("🆙 Update Now", use_container_width=True):
+                        supabase.table("blacklist").update({
+                            "name": edit_name, 
+                            "nrcno": edit_nrc, 
+                            "remark": edit_remark
+                        }).eq("srno", selected['srno']).execute()
+                        st.success("Updated successfully!")
                         st.rerun()
+                    
+                    # ဖျက်ပစ်ရန် (Delete)
+                    if btn_col2.button("🗑️ Delete Permanently", type="secondary", use_container_width=True):
+                        supabase.table("blacklist").delete().eq("srno", selected['srno']).execute()
+                        st.warning("Record deleted!")
+                        st.rerun()
+            else:
+                st.info("No records found to edit.")
 
 # --- ၅။ Inward Transaction Page ---
 elif page == "🏦 Inward Transaction":
