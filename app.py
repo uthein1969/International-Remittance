@@ -249,17 +249,16 @@ elif page == "🏦 Inward Transaction":
 
     # Save Action with Blacklist Check
     if st.button("💾 Save Inward Transaction", type="primary", use_container_width=True):
-        # မဖြစ်မနေ လိုအပ်သော field များ ရှိမရှိ အရင်စစ်ပါ
-        if r_name and r_nrc and s_name:
+        if r_name and r_nrc:
             try:
-                # ၁။ Blacklist စစ်ဆေးခြင်း
+                # ၁။ Blacklist အရင်စစ်သည်
                 check_bl = supabase.table("blacklist").select("name").eq("nrcno", r_nrc).execute()
                 
                 if len(check_bl.data) > 0:
-                    st.error(f"❌ STOP! {r_nrc} သည် Blacklist စာရင်းဝင် ({check_bl.data[0]['name']}) ဖြစ်နေပါသည်။")
+                    st.error(f"❌ Blacklisted User: {check_bl.data[0]['name']}")
                 else:
-                    # ၂။ အချက်အလက်များကို Dictionary ပုံစံဖြင့် စုစည်းပါ
-                    data_to_save = {
+                    # ၂။ ဒေတာများကို စုစည်းသည်
+                    new_data = {
                         "branch": branch,
                         "transaction_no": trans_no,
                         "r_name": r_name,
@@ -274,22 +273,24 @@ elif page == "🏦 Inward Transaction":
                         "s_id": s_id,
                         "s_country": s_country,
                         "currency": currency,
-                        "amount": float(amount),
-                        "mmk_rate": float(mmk_rate),
-                        "mmk_allowance": float(mmk_allowance),
-                        "usd_equiv": float(usd_equiv),
-                        "total_mmk": float(total_mmk)
+                        "amount": float(amount) if amount else 0,
+                        "mmk_rate": float(mmk_rate) if mmk_rate else 0,
+                        "mmk_allowance": float(mmk_allowance) if mmk_allowance else 0,
+                        "usd_equiv": float(usd_equiv) if usd_equiv else 0,
+                        "total_mmk": float(total_mmk) if total_mmk else 0
                     }
 
-                    # ၃။ Supabase 'inward_transactions' table ထဲသို့ ထည့်သွင်းပါ
-                    res = supabase.table("inward_transactions").insert(data_to_save).execute()
+                    # ၃။ Database ထဲသို့ ထည့်သည်
+                    response = supabase.table("inward_transactions").insert(new_data).execute()
                     
-                    if res.data:
-                        st.success(f"✅ Transaction No. {trans_no} ကို အောင်မြင်စွာ သိမ်းဆည်းပြီးပါပြီ။")
-                        st.balloons() # အောင်မြင်မှု အောင်ပွဲခံခြင်း
-                        st.rerun() # Form ကို Reset လုပ်ရန်
-            
+                    if response.data:
+                        st.success("✅ ဒေတာကို အောင်မြင်စွာ သိမ်းဆည်းပြီးပါပြီ။")
+                        st.balloons()
+                        # ခဏစောင့်ပြီးမှ Refresh လုပ်ရန်
+                        import time
+                        time.sleep(2)
+                        st.rerun()
             except Exception as e:
-                st.error(f"Database Error: {e}")
+                st.error(f"Error saving data: {e}") # ဘာလို့ မသိမ်းလဲဆိုတဲ့ အဖြေကို ဤနေရာတွင် ပြပါလိမ့်မည်
         else:
-            st.warning("⚠️ Receiver Name, NRC နှင့် Sender Name တို့ကို မဖြစ်မနေ ဖြည့်သွင်းပေးပါ။")
+            st.warning("⚠️ Receiver Name နှင့် NRC ကို ဖြည့်စွက်ပါ။")
