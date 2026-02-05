@@ -192,7 +192,7 @@ elif page == "🏦 Inward Transaction":
     with h_col2:
         branch = st.selectbox("Select Branch", ["", "Yangon Branch", "Mandalay Branch", "Nay Pyi Taw Branch"])
     with h_col3:
-        trans_no = st.text_input("Transaction No:", value="9639")
+        trans_no = st.text_input("Transaction No:", value="0001")
 
     # --- ၂။ RECEIVER INFORMATION ---
     st.subheader("🔵 RECEIVER INFORMATION :")
