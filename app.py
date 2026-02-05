@@ -13,6 +13,9 @@ ADMIN_PASSWORD = "admin123" # သင်နှစ်သက်ရာ Password ပ�
 
 st.set_page_config(page_title="Remittance System", layout="wide")
 
+yangon_tz = pytz.timezone('Asia/Yangon')
+now_yangon = datetime.now(yangon_tz)
+
 # Session State ဖြင့် Login အခြေအနေကို မှတ်ထားခြင်း
 if 'logged_in' not in st.session_state:
     st.session_state.logged_in = False
