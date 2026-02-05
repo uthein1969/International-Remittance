@@ -235,16 +235,48 @@ elif page == "🏦 Inward Transaction":
             st.warning("⚠️ Receiver NRC ကို ဖြည့်သွင်းပေးပါ။")
 
     # Save Action with Blacklist Check
-    if st.button("💾 Save Transaction", type="primary", use_container_width=True):
-        if r_nrc:
-            # Blacklist ထဲတွင် ရှိမရှိ စစ်ဆေးခြင်း
-            check_bl = supabase.table("blacklist").select("name").eq("nrcno", r_nrc).execute()
-            if len(check_bl.data) > 0:
-                st.error(f"❌ STOP! {r_nrc} သည် Blacklist စာရင်းဝင် ({check_bl.data[0]['name']}) ဖြစ်ပါသည်။")
-            else:
-                st.success("✅ Transaction အချက်အလက်များ မှန်ကန်ပါသည်။")
+    if st.button("💾 Save Inward Transaction", type="primary", use_container_width=True):
+        # မဖြစ်မနေ လိုအပ်သော field များ ရှိမရှိ အရင်စစ်ပါ
+        if r_name and r_nrc and s_name:
+            try:
+                # ၁။ Blacklist စစ်ဆေးခြင်း
+                check_bl = supabase.table("blacklist").select("name").eq("nrcno", r_nrc).execute()
                 
-                if c2.button("🗑️ Delete"):
-                    supabase.table("blacklist").delete().eq("srno", selected['srno']).execute()
-                    st.warning("Deleted!")
-                    st.rerun()
+                if len(check_bl.data) > 0:
+                    st.error(f"❌ STOP! {r_nrc} သည် Blacklist စာရင်းဝင် ({check_bl.data[0]['name']}) ဖြစ်နေပါသည်။")
+                else:
+                    # ၂။ အချက်အလက်များကို Dictionary ပုံစံဖြင့် စုစည်းပါ
+                    data_to_save = {
+                        "branch": branch,
+                        "transaction_no": trans_no,
+                        "r_name": r_name,
+                        "r_nrc": r_nrc,
+                        "r_address": r_address,
+                        "r_phone": r_phone,
+                        "r_purpose": r_purpose,
+                        "r_state": r_state,
+                        "r_withdraw_point": r_point,
+                        "r_remark": r_remark,
+                        "s_name": s_name,
+                        "s_id": s_id,
+                        "s_country": s_country,
+                        "currency": currency,
+                        "amount": float(amount),
+                        "mmk_rate": float(mmk_rate),
+                        "mmk_allowance": float(mmk_allowance),
+                        "usd_equiv": float(usd_equiv),
+                        "total_mmk": float(total_mmk)
+                    }
+
+                    # ၃။ Supabase 'inward_transactions' table ထဲသို့ ထည့်သွင်းပါ
+                    res = supabase.table("inward_transactions").insert(data_to_save).execute()
+                    
+                    if res.data:
+                        st.success(f"✅ Transaction No. {trans_no} ကို အောင်မြင်စွာ သိမ်းဆည်းပြီးပါပြီ။")
+                        st.balloons() # အောင်မြင်မှု အောင်ပွဲခံခြင်း
+                        st.rerun() # Form ကို Reset လုပ်ရန်
+            
+            except Exception as e:
+                st.error(f"Database Error: {e}")
+        else:
+            st.warning("⚠️ Receiver Name, NRC နှင့် Sender Name တို့ကို မဖြစ်မနေ ဖြည့်သွင်းပေးပါ။")
