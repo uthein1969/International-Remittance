@@ -54,39 +54,50 @@ if page == "📊 Dashboard":
     st.title("📈 Transaction Dashboard")
     st.markdown(f"**Last Updated:** {now_yangon.strftime('%Y-%m-%d %H:%M:%S')} (Yangon Time)")
 
-    # Daily Section
+    try:
+        # ၁။ ဒေတာအားလုံးကို ဆွဲထုတ်ခြင်း
+        res = supabase.table("inward_transactions").select("amount, created_at").execute()
+        df_dash = pd.DataFrame(res.data)
+
+        if not df_dash.empty:
+            # Date format ပြောင်းလဲခြင်း
+            df_dash['created_at'] = pd.to_datetime(df_dash['created_at']).dt.tz_convert('Asia/Yangon')
+            today = now_yangon.date()
+            this_month = now_yangon.month
+            this_year = now_yangon.year
+
+            # ၂။ တွက်ချက်ခြင်း (Daily, Monthly, Yearly)
+            daily_sum = df_dash[df_dash['created_at'].dt.date == today]['amount'].sum()
+            monthly_sum = df_dash[(df_dash['created_at'].dt.month == this_month) & 
+                                  (df_dash['created_at'].dt.year == this_year)]['amount'].sum()
+            yearly_sum = df_dash[df_dash['created_at'].dt.year == this_year]['amount'].sum()
+        else:
+            daily_sum = monthly_sum = yearly_sum = 0
+    except Exception as e:
+        st.error(f"Dashboard Error: {e}")
+        daily_sum = monthly_sum = yearly_sum = 0
+
+    # --- ၃။ UI ပြသခြင်း (ရောင်စုံ Card များ) ---
     st.subheader("Daily Transaction")
     d_col1, d_col2 = st.columns(2)
-    with d_col1:
-        st.date_input("Start Date", value=now_yangon, key="ds")
-    with d_col2:
-        st.date_input("End Date", value=now_yangon, key="de")
-    
-    # ရောင်စုံ Box များ (Daily)
-    db1, db2 = st.columns(2)
-    db1.info("### 0 \n 📉 Daily Inward") # ပုံထဲကအရောင်အတိုင်း Info/Warning/Error သုံးနိုင်သည်
-    db2.info("### 0 \n 📉 Daily Outward")
+    # Amount ကို 0,000 ပုံစံ ကော်မာလေးတွေနဲ့ ပြသပါမည်
+    d_col1.info(f"### {daily_sum:,.2f} \n 📉 Daily Inward")
+    d_col2.info(f"### 0 \n 📉 Daily Outward")
 
     st.divider()
 
-    # Monthly Section
     st.subheader("Monthly Transaction")
     m_col1, m_col2 = st.columns(2)
-    m_col1.selectbox("Start Month", ["February 2026"])
-    m_col2.selectbox("End Month", ["February 2026"])
-    
-    mb1, mb2 = st.columns(2)
-    # ဥပမာ ဒေတာ ၁၁၁၈ အား ပြသခြင်း
-    mb1.warning("### 0 \n 📈 Monthly Inward") 
-    mb2.warning("### 0 \n 📈 Monthly Outward")
+    # ပုံထဲက 1118 ကဲ့သို့သော နေရာတွင် အစစ်အမှန် ဒေတာ ပေါ်လာပါမည်
+    m_col1.warning(f"### {monthly_sum:,.2f} \n 📈 Monthly Inward") 
+    m_col2.warning(f"### 0 \n 📈 Monthly Outward")
 
     st.divider()
 
-    # Yearly Section
     st.subheader("Yearly Transaction")
-    yb1, yb2 = st.columns(2)
-    yb1.error("### 0 \n 📊 Yearly Inward")
-    yb2.error("### 0 \n 📊 Yearly Outward")
+    y_col1, y_col2 = st.columns(2)
+    y_col1.error(f"### {yearly_sum:,.2f} \n 📊 Yearly Inward")
+    y_col2.error(f"### 0 \n 📊 Yearly Outward")
 
 # --- ၄။ Blacklist System Page ---
 if page == "📋 Blacklist Info":
