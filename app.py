@@ -90,7 +90,7 @@ elif page == "🏦 Inward Transaction":
         st.text_input("Date:", value=datetime.now().strftime("%Y-%m-%d %H:%M:%S"), disabled=True)
     with h_col2:
         st.selectbox("Select Branch:", ["Yangon Branch", "Mandalay Branch", "Nay Pyi Taw Branch"])
-    with col_h3 := h_col3: # Transaction No
+    with h_col3: # ဤနေရာတွင် := ကို ဖယ်ထုတ်လိုက်ပါ
         st.text_input("Transaction No:", value="9639")
 
     # Receiver Information
