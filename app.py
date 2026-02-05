@@ -42,9 +42,48 @@ if st.sidebar.button("Logout"):
     st.rerun()
 
 st.sidebar.title("🚀 Main Menu")
-page = st.sidebar.radio("Go to:", ["📋 Blacklist Info", "🏦 Inward Transaction"])
+page = st.sidebar.radio("Go to:", ["📊 Dashboard", "📋 Blacklist Info", "🏦 Inward Transaction"])
 st.sidebar.markdown("---")
 st.sidebar.info("System Version 2.0v")
+
+# --- ၄။ Dashboard Page (Login ဝင်ပြီးလျှင် အရင်ဆုံးမြင်ရမည့်စာမျက်နှာ) ---
+if page == "📊 Dashboard":
+    st.title("📈 Transaction Dashboard")
+    st.markdown(f"**Last Updated:** {now_yangon.strftime('%Y-%m-%d %H:%M:%S')} (Yangon Time)")
+
+    # Daily Section
+    st.subheader("Daily Transaction")
+    d_col1, d_col2 = st.columns(2)
+    with d_col1:
+        st.date_input("Start Date", value=now_yangon, key="ds")
+    with d_col2:
+        st.date_input("End Date", value=now_yangon, key="de")
+    
+    # ရောင်စုံ Box များ (Daily)
+    db1, db2 = st.columns(2)
+    db1.info("### 0 \n 📉 Daily Inward") # ပုံထဲကအရောင်အတိုင်း Info/Warning/Error သုံးနိုင်သည်
+    db2.info("### 0 \n 📉 Daily Outward")
+
+    st.divider()
+
+    # Monthly Section
+    st.subheader("Monthly Transaction")
+    m_col1, m_col2 = st.columns(2)
+    m_col1.selectbox("Start Month", ["February 2026"])
+    m_col2.selectbox("End Month", ["February 2026"])
+    
+    mb1, mb2 = st.columns(2)
+    # ဥပမာ ဒေတာ ၁၁၁၈ အား ပြသခြင်း
+    mb1.warning("### 1118 \n 📈 Monthly Inward") 
+    mb2.warning("### 0 \n 📈 Monthly Outward")
+
+    st.divider()
+
+    # Yearly Section
+    st.subheader("Yearly Transaction")
+    yb1, yb2 = st.columns(2)
+    yb1.error("### 0 \n 📊 Yearly Inward")
+    yb2.error("### 0 \n 📊 Yearly Outward")
 
 # --- ၄။ Blacklist System Page ---
 if page == "📋 Blacklist Info":
