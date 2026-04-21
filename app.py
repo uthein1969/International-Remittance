@@ -45,7 +45,12 @@ if st.sidebar.button("Logout"):
     st.rerun()
 
 st.sidebar.title("🚀 Main Menu")
-page = st.sidebar.radio("Go to:", ["📊 Dashboard", "🔍 Search Transactions", "📋 Blacklist Info", "🏦 Inward Transaction"])
+page = st.sidebar.radio("Go to:", 
+["📊 Dashboard", 
+ "🔍 Search Transactions", 
+ "📋 Blacklist Info", 
+ "🏦 Inward Transaction",
+"⚙️ System Control"])
 st.sidebar.markdown("---")
 st.sidebar.info("System Version 2.0v")
 
@@ -365,3 +370,71 @@ elif page == "🏦 Inward Transaction":
                 st.error(f"Error saving data: {e}") # ဘာလို့ မသိမ်းလဲဆိုတဲ့ အဖြေကို ဤနေရာတွင် ပြပါလိမ့်မည်
         else:
             st.warning("⚠️ Receiver Name နှင့် NRC ကို ဖြည့်စွက်ပါ။")
+            # --- ၂။ System Control Logic ---
+if page == "⚙️ System Control":
+    st.title("⚙️ System Control & Setup")
+    
+    # Tab များခွဲခြင်း
+    tab1, tab2, tab3 = st.tabs(["🌍 Country Setup", "🏢 Branch Setup", "👤 User Setup"])
+
+    # --- (၁) Country Setup ---
+    with tab1:
+        st.subheader("Add New Country")
+        with st.form("country_form", clear_on_submit=True):
+            c1, c2 = st.columns(2)
+            c_code = c1.text_input("Country Code")
+            c_name = c2.text_input("Country Name")
+            c_curr = c1.text_input("Currency (e.g. THB, USD)")
+            c_remark = c2.text_area("Remark")
+            
+            if st.form_submit_button("Save Country"):
+                if c_code and c_name:
+                    supabase.table("country_setup").insert({
+                        "country_code": c_code, "country_name": c_name, 
+                        "currency": c_curr, "remark": c_remark
+                    }).execute()
+                    st.success(f"Country {c_name} saved!")
+                else:
+                    st.warning("Please fill required fields.")
+
+    # --- (၂) Branch Setup ---
+    with tab2:
+        st.subheader("Add New Branch")
+        with st.form("branch_form", clear_on_submit=True):
+            b1, b2 = st.columns(2)
+            b_code = b1.text_input("Branch Code")
+            b_name = b2.text_input("Branch Name")
+            
+            # Country List ကို Database မှ ပြန်ယူခြင်း
+            countries = supabase.table("country_setup").select("country_name").execute()
+            c_list = [r['country_name'] for r in countries.data] if countries.data else []
+            
+            b_country = b1.selectbox("Country", options=c_list)
+            b_curr = b2.text_input("Currency")
+            b_ph = b1.text_input("Phone No")
+            b_addr = b2.text_area("Address")
+            
+            if st.form_submit_button("Save Branch"):
+                supabase.table("branch_setup").insert({
+                    "branch_code": b_code, "branch_name": b_name, "country": b_country,
+                    "currency": b_curr, "phone_no": b_ph, "address": b_addr
+                }).execute()
+                st.success(f"Branch {b_name} saved!")
+
+    # --- (၃) User Setup ---
+    with tab3:
+        st.subheader("Add New User")
+        with st.form("user_form", clear_on_submit=True):
+            u_id = st.text_input("User ID")
+            u_pwd = st.text_input("Password", type="password")
+            u_confirm = st.text_input("Confirm Password", type="password")
+            u_remark = st.text_area("Remark")
+            
+            if st.form_submit_button("Create User"):
+                if u_pwd != u_confirm:
+                    st.error("Passwords do not match!")
+                elif u_id and u_pwd:
+                    supabase.table("user_setup").insert({
+                        "user_id": u_id, "password": u_pwd, "remark": u_remark
+                    }).execute()
+                    st.success(f"User {u_id} created!")
