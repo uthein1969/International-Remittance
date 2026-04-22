@@ -9,33 +9,45 @@ URL = st.secrets["SUPABASE_URL"]
 KEY = st.secrets["SUPABASE_KEY"]
 supabase: Client = create_client(URL, KEY)
 
-ADMIN_PASSWORD = "admin123" # သင်နှစ်သက်ရာ Password ပြောင်းလဲနိုင်သည်
-
-st.set_page_config(page_title="Remittance System", layout="wide")
-
-yangon_tz = pytz.timezone('Asia/Yangon')
-now_yangon = datetime.now(yangon_tz)
-
-# Session State ဖြင့် Login အခြေအနေကို မှတ်ထားခြင်း
+# --- ၁။ Login Session စတင်ခြင်း ---
 if 'logged_in' not in st.session_state:
-    st.session_state.logged_in = False
+    st.session_state['logged_in'] = False
 
-# --- ၂။ Login Page (Login မဝင်ရသေးခင် ပြသမည့်အပိုင်း) ---
-if not st.session_state.logged_in:
-    st.title("🔐 Secure Login - Remittance System")
-    col_l1, col_l2, col_l3 = st.columns([1, 2, 1])
+# --- ၂။ Login Page ပြသခြင်း ---
+if not st.session_state['logged_in']:
+    st.title("🔐 Admin Login System")
     
-    with col_l2:
-        with st.container(border=True):
-            st.subheader("Admin Login")
-            pwd_input = st.text_input("Enter Password", type="password")
-            if st.button("Login"):
-                if pwd_input == ADMIN_PASSWORD:
-                    st.session_state.logged_in = True
-                    st.rerun() # Login အောင်မြင်လျှင် Page ကို Refresh လုပ်ရန်
+    with st.form("login_form"):
+        input_user = st.text_input("User ID")
+        input_pass = st.text_input("Password", type="password")
+        submit_btn = st.form_submit_button("Login")
+        
+        if submit_btn:
+            try:
+                # Database ထဲတွင် User ID နှင့် Password ကိုက်မကိုက် စစ်ဆေးခြင်း
+                res = supabase.table("user_setup")\
+                    .select("*")\
+                    .eq("user_id", input_user)\
+                    .eq("password", input_pass)\
+                    .execute()
+                
+                if res.data:
+                    st.session_state['logged_in'] = True
+                    st.success("✅ Login Successful!")
+                    st.rerun() # Login အောင်မြင်လျှင် စာမျက်နှာကို Refresh လုပ်ရန်
                 else:
-                    st.error("❌ Password မှားယွင်းနေပါသည်။")
-    st.stop() # Login မဝင်မချင်း အောက်က Code တွေကို ဆက်မသွားခိုင်းရန်
+                    st.error("❌ Invalid User ID or Password")
+            except Exception as e:
+                st.error(f"Login Error: {e}")
+    
+    st.stop() # Login မဝင်မချင်း အောက်က Code တွေကို ဆက်မသွားစေရန် တားထားခြင်း
+
+# --- ၃။ Main System (Login ဝင်ပြီးမှ ပေါ်မည့်အပိုင်း) ---
+# ဤနေရာမှစပြီး Sidebar နှင့် ကျန်သော Page Logic များကို ထားရှိပါ
+st.sidebar.success(f"Logged in as: Admin")
+if st.sidebar.button("Logout"):
+    st.session_state['logged_in'] = False
+    st.rerun()
 
 # --- ၃။ Main System (Login ဝင်ပြီးမှသာ ပေါ်လာမည့်အပိုင်း) ---
 # Sidebar မှာ Logout ခလုတ်နှင့် Menu ထားရှိခြင်း
