@@ -422,7 +422,7 @@ if page == "⚙️ System Control":
                 st.success(f"Branch {b_name} saved!")
 
     # --- (၃) User Setup ---
-with tab3:
+
     st.subheader("Add New User")
     with st.form("user_form", clear_on_submit=True):
         u_id = st.text_input("User ID")
