@@ -374,124 +374,118 @@ elif page == "🏦 Inward Transaction":
 if page == "⚙️ System Control":
     st.title("⚙️ System Control & Setup")
     
-    # Tab များခွဲခြင်း
+    # ၁။ Tab များခွဲခြားခြင်း
     tab1, tab2, tab3 = st.tabs(["🌍 Country Setup", "🏢 Branch Setup", "👤 User Setup"])
 
     # --- (၁) Country Setup ---
     with tab1:
-        st.subheader("Add New Country")
-        with st.form("country_form", clear_on_submit=True):
-            c1, c2 = st.columns(2)
-            c_code = c1.text_input("Country Code")
-            c_name = c2.text_input("Country Name")
-            c_curr = c1.text_input("Currency (e.g. THB, USD)")
-            c_remark = c2.text_area("Remark")
+        st.subheader("Country Management")
+        with st.expander("➕ Add New Country"):
+            with st.form("country_form", clear_on_submit=True):
+                c1, c2 = st.columns(2)
+                c_code = c1.text_input("Country Code")
+                c_name = c2.text_input("Country Name")
+                c_curr = c1.text_input("Currency (e.g. THB)")
+                c_remark = c2.text_area("Remark")
+                if st.form_submit_button("Save Country"):
+                    if c_code and c_name:
+                        supabase.table("country_setup").insert({
+                            "country_code": c_code, "country_name": c_name, "currency": c_curr, "remark": c_remark
+                        }).execute()
+                        st.success(f"Country {c_name} saved!")
+                        st.rerun()
+
+        st.divider()
+        st.subheader("📋 Country List")
+        res_c = supabase.table("country_setup").select("*").execute()
+        if res_c.data:
+            df_c = pd.DataFrame(res_c.data)
+            st.dataframe(df_c[['country_code', 'country_name', 'currency', 'remark']], use_container_width=True)
             
-            if st.form_submit_button("Save Country"):
-                if c_code and c_name:
-                    supabase.table("country_setup").insert({
-                        "country_code": c_code, "country_name": c_name, 
-                        "currency": c_curr, "remark": c_remark
-                    }).execute()
-                    st.success(f"Country {c_name} saved!")
-                else:
-                    st.warning("Please fill required fields.")
+            # Update/Delete Section
+            target_c = st.selectbox("Select Country to Edit", ["-- Select --"] + [r['country_name'] for r in res_c.data])
+            if target_c != "-- Select --":
+                c_data = next(r for r in res_c.data if r['country_name'] == target_c)
+                with st.container(border=True):
+                    up_cname = st.text_input("Edit Name", value=c_data['country_name'])
+                    up_ccurr = st.text_input("Edit Currency", value=c_data['currency'])
+                    if st.button("Update Country"):
+                        supabase.table("country_setup").update({"country_name": up_cname, "currency": up_ccurr}).eq("id", c_data['id']).execute()
+                        st.success("Updated!")
+                        st.rerun()
 
     # --- (၂) Branch Setup ---
     with tab2:
-        st.subheader("Add New Branch")
-        with st.form("branch_form", clear_on_submit=True):
-            b1, b2 = st.columns(2)
-            b_code = b1.text_input("Branch Code")
-            b_name = b2.text_input("Branch Name")
-            
-            # Country List ကို Database မှ ပြန်ယူခြင်း
-            countries = supabase.table("country_setup").select("country_name").execute()
-            c_list = [r['country_name'] for r in countries.data] if countries.data else []
-            
-            b_country = b1.selectbox("Country", options=c_list)
-            b_curr = b2.text_input("Currency")
-            b_ph = b1.text_input("Phone No")
-            b_addr = b2.text_area("Address")
-            
-            if st.form_submit_button("Save Branch"):
-                supabase.table("branch_setup").insert({
-                    "branch_code": b_code, "branch_name": b_name, "country": b_country,
-                    "currency": b_curr, "phone_no": b_ph, "address": b_addr
-                }).execute()
-                st.success(f"Branch {b_name} saved!")
+        st.subheader("Branch Management")
+        with st.expander("➕ Add New Branch"):
+            with st.form("branch_form", clear_on_submit=True):
+                b1, b2 = st.columns(2)
+                b_code = b1.text_input("Branch Code")
+                b_name = b2.text_input("Branch Name")
+                countries = supabase.table("country_setup").select("country_name").execute()
+                c_list = [r['country_name'] for r in countries.data] if countries.data else []
+                b_country = b1.selectbox("Country", options=c_list)
+                b_curr = b2.text_input("Currency")
+                b_ph = b1.text_input("Phone No")
+                b_addr = b2.text_area("Address")
+                if st.form_submit_button("Save Branch"):
+                    supabase.table("branch_setup").insert({
+                        "branch_code": b_code, "branch_name": b_name, "country": b_country,
+                        "currency": b_curr, "phone_no": b_ph, "address": b_addr
+                    }).execute()
+                    st.success(f"Branch {b_name} saved!")
+                    st.rerun()
 
-    # --- (၃) User Setup Page Logic ---
+        st.divider()
+        st.subheader("📋 Branch List")
+        res_b = supabase.table("branch_setup").select("*").execute()
+        if res_b.data:
+            df_b = pd.DataFrame(res_b.data)
+            st.dataframe(df_b[['branch_code', 'branch_name', 'country', 'phone_no']], use_container_width=True)
 
-    st.subheader("👤 User Management System")
-    
-    # ၁။ User အသစ်ထည့်ရန် (Expander သုံးထား၍ မျက်စိမရှုပ်ပါ)
-    with st.expander("➕ Add New User"):
-        with st.form("user_new_form", clear_on_submit=True):
-            u_id = st.text_input("User ID")
-            u_pwd = st.text_input("Password", type="password")
-            u_confirm = st.text_input("Confirm Password", type="password")
-            u_remark = st.text_area("Remark")
-            
-            if st.form_submit_button("Create User"):
-                if u_id and u_pwd == u_confirm:
-                    try:
-                        supabase.table("user_setup").insert({
-                            "user_id": u_id, "password": u_pwd, "remark": u_remark
-                        }).execute()
+    # --- (၃) User Setup (Everything now inside tab3) ---
+    with tab3:
+        st.subheader("👤 User Management")
+        with st.expander("➕ Add New User"):
+            with st.form("user_new_form", clear_on_submit=True):
+                u_id = st.text_input("User ID")
+                u_pwd = st.text_input("Password", type="password")
+                u_confirm = st.text_input("Confirm Password", type="password")
+                u_remark = st.text_area("Remark")
+                if st.form_submit_button("Create User"):
+                    if u_id and u_pwd == u_confirm:
+                        supabase.table("user_setup").insert({"user_id": u_id, "password": u_pwd, "remark": u_remark}).execute()
                         st.success(f"User {u_id} created!")
                         st.rerun()
-                    except Exception as e:
-                        st.error(f"Error: {e}")
-                else:
-                    st.warning("Please check ID or Password matching.")
 
-    st.divider()
-
-    # ၂။ လက်ရှိ User များကို ဇယားဖြင့် အရင်ပြခြင်း
-    st.subheader("📋 Registered Users List")
-    try:
-        # User အချက်အလက်များ ဆွဲထုတ်ခြင်း
-        res_u = supabase.table("user_setup").select("user_id, remark, created_at, id").execute()
-        
+        st.divider()
+        st.subheader("📋 Registered Users List")
+        res_u = supabase.table("user_setup").select("*").execute()
         if res_u.data:
             df_u = pd.DataFrame(res_u.data)
-            # ဇယားကွက်ဖြင့် ပြသခြင်း
             st.dataframe(df_u[['user_id', 'remark', 'created_at']], use_container_width=True)
 
-            # ၃။ ပြင်ဆင်ရန် သို့မဟုတ် ဖျက်ရန် ရွေးချယ်သည့်အပိုင်း
-            st.subheader("🛠️ Select User to Modify")
-            # Selectbox ဖြင့် ရွေးချယ်စေခြင်း
+            st.subheader("🛠️ Edit User Account")
             u_list = [u['user_id'] for u in res_u.data]
-            target_uid = st.selectbox("Choose a User ID to edit/delete:", options=["-- Select --"] + u_list)
+            target_uid = st.selectbox("Choose a User ID to modify:", options=["-- Select --"] + u_list)
             
             if target_uid != "-- Select --":
-                # ရွေးချယ်လိုက်သော User ၏ data ကို ရှာခြင်း
                 user_data = next(u for u in res_u.data if u['user_id'] == target_uid)
-                
                 with st.container(border=True):
-                    # ပြင်ဆင်ရန် Field များ
-                    edit_uid = st.text_input("Update User ID", value=user_data['user_id'])
-                    edit_remark = st.text_area("Update Remark", value=user_data['remark'])
+                    up_uid = st.text_input("Update User ID", value=user_data['user_id'])
+                    # Password ကိုပါ ပြင်လို့ရအောင် ထည့်ထားပေးပါတယ်
+                    up_pwd = st.text_input("Update Password", value=user_data['password'], type="password")
+                    up_remark = st.text_area("Update Remark", value=user_data['remark'])
                     
-                    col_btn1, col_btn2 = st.columns(2)
-                    
-                    # Update Button
-                    if col_btn1.button("🆙 Update User Now", type="primary", use_container_width=True):
+                    col_u1, col_u2 = st.columns(2)
+                    if col_u1.button("🆙 Update User Now", type="primary", use_container_width=True):
                         supabase.table("user_setup").update({
-                            "user_id": edit_uid, "remark": edit_remark
+                            "user_id": up_uid, "password": up_pwd, "remark": up_remark
                         }).eq("id", user_data['id']).execute()
-                        st.success("Successfully updated!")
+                        st.success("✅ Information updated!")
                         st.rerun()
                     
-                    # Delete Button
-                    if col_btn2.button("🗑️ Delete User Permanently", use_container_width=True):
+                    if col_u2.button("🗑️ Delete User", use_container_width=True):
                         supabase.table("user_setup").delete().eq("id", user_data['id']).execute()
                         st.warning("User deleted!")
                         st.rerun()
-        else:
-            st.info("No users found in database.")
-            
-    except Exception as e:
-        # ဤနေရာတွင် Syntax မှန်ကန်ရန် try-except ကို သေချာပိတ်ထားပါ
-        st.error(f"Connection Error: {e}")
