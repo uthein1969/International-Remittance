@@ -422,7 +422,7 @@ if page == "⚙️ System Control":
                 st.success(f"Branch {b_name} saved!")
 
     # --- (၃) User Setup Page Logic ---
-with tab3:
+
     st.subheader("👤 User Management System")
     
     # ၁။ User အသစ်ထည့်ရန် (Expander သုံးထား၍ မျက်စိမရှုပ်ပါ)
