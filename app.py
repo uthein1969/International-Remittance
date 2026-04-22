@@ -42,13 +42,6 @@ if not st.session_state['logged_in']:
     
     st.stop() # Login မဝင်မချင်း အောက်က Code တွေကို ဆက်မသွားစေရန် တားထားခြင်း
 
-# --- ၃။ Main System (Login ဝင်ပြီးမှ ပေါ်မည့်အပိုင်း) ---
-# ဤနေရာမှစပြီး Sidebar နှင့် ကျန်သော Page Logic များကို ထားရှိပါ
-st.sidebar.success(f"Logged in as: Admin")
-if st.sidebar.button("Logout"):
-    st.session_state['logged_in'] = False
-    st.rerun()
-
 # --- ၃။ Main System (Login ဝင်ပြီးမှသာ ပေါ်လာမည့်အပိုင်း) ---
 # Sidebar မှာ Logout ခလုတ်နှင့် Menu ထားရှိခြင်း
 st.sidebar.success("Logged In ✅")
