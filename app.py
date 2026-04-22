@@ -3,6 +3,9 @@ import streamlit as st
 import pytz
 from supabase import create_client, Client
 from datetime import datetime
+# --- အချိန်သတ်မှတ်ချက် (Login မဝင်ခင်ကတည်းက သိနေစေရန် ဤနေရာတွင်ထားပါ) ---
+yangon_tz = pytz.timezone('Asia/Yangon')
+now_yangon = datetime.now(yangon_tz)
 
 # --- ၁။ Setup & Connections ---
 URL = st.secrets["SUPABASE_URL"]
