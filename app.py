@@ -421,60 +421,77 @@ if page == "⚙️ System Control":
                 }).execute()
                 st.success(f"Branch {b_name} saved!")
 
-    # --- (၃) User Setup ---
+    # --- (၃) User Setup Page Logic ---
 with tab3:
-    st.subheader("👤 User Management")
+    st.subheader("👤 User Management System")
     
-    # ၁။ User အသစ်ထည့်ရန် Form
-    with st.expander("➕ Add New User", expanded=False):
-        with st.form("user_form", clear_on_submit=True):
+    # ၁။ User အသစ်ထည့်ရန် (Expander သုံးထား၍ မျက်စိမရှုပ်ပါ)
+    with st.expander("➕ Add New User"):
+        with st.form("user_new_form", clear_on_submit=True):
             u_id = st.text_input("User ID")
             u_pwd = st.text_input("Password", type="password")
             u_confirm = st.text_input("Confirm Password", type="password")
             u_remark = st.text_area("Remark")
+            
             if st.form_submit_button("Create User"):
-                if u_pwd == u_confirm and u_id:
-                    supabase.table("user_setup").insert({"user_id": u_id, "password": u_pwd, "remark": u_remark}).execute()
-                    st.success(f"User {u_id} created!")
-                    st.rerun()
+                if u_id and u_pwd == u_confirm:
+                    try:
+                        supabase.table("user_setup").insert({
+                            "user_id": u_id, "password": u_pwd, "remark": u_remark
+                        }).execute()
+                        st.success(f"User {u_id} created!")
+                        st.rerun()
+                    except Exception as e:
+                        st.error(f"Error: {e}")
                 else:
-                    st.error("Check ID or Password matching.")
+                    st.warning("Please check ID or Password matching.")
 
     st.divider()
 
-    # ၂။ လက်ရှိ User စာရင်းကို ဇယားဖြင့်ပြခြင်း
-    st.subheader("📋 Registered Users")
+    # ၂။ လက်ရှိ User များကို ဇယားဖြင့် အရင်ပြခြင်း
+    st.subheader("📋 Registered Users List")
     try:
-        res_users = supabase.table("user_setup").select("user_id, remark, created_at, id").execute()
-        if res_users.data:
-            df_users = pd.DataFrame(res_users.data)
-            # ဇယားကွက်ထဲတွင် Password မပြဘဲ အခြားအချက်အလက်များကို ပြသည်
-            st.dataframe(df_users[['user_id', 'remark', 'created_at']], use_container_width=True)
+        # User အချက်အလက်များ ဆွဲထုတ်ခြင်း
+        res_u = supabase.table("user_setup").select("user_id, remark, created_at, id").execute()
+        
+        if res_u.data:
+            df_u = pd.DataFrame(res_u.data)
+            # ဇယားကွက်ဖြင့် ပြသခြင်း
+            st.dataframe(df_u[['user_id', 'remark', 'created_at']], use_container_width=True)
 
-            # ၃။ ပြင်ဆင်ရန် သို့မဟုတ် ဖျက်ရန် ရွေးချယ်ခြင်း
-            st.subheader("🛠️ Edit or Delete Action")
-            selected_uid = st.selectbox("ပြင်ဆင်လိုသော User ID ကိုရွေးပါ", options=["-- Select User --"] + [u['user_id'] for u in res_users.data])
+            # ၃။ ပြင်ဆင်ရန် သို့မဟုတ် ဖျက်ရန် ရွေးချယ်သည့်အပိုင်း
+            st.subheader("🛠️ Select User to Modify")
+            # Selectbox ဖြင့် ရွေးချယ်စေခြင်း
+            u_list = [u['user_id'] for u in res_u.data]
+            target_uid = st.selectbox("Choose a User ID to edit/delete:", options=["-- Select --"] + u_list)
             
-            if selected_uid != "-- Select User --":
-                user_to_edit = next(u for u in res_users.data if u['user_id'] == selected_uid)
+            if target_uid != "-- Select --":
+                # ရွေးချယ်လိုက်သော User ၏ data ကို ရှာခြင်း
+                user_data = next(u for u in res_u.data if u['user_id'] == target_uid)
                 
                 with st.container(border=True):
-                    up_uid = st.text_input("Update User ID", value=user_to_edit['user_id'])
-                    up_remark = st.text_area("Update Remark", value=user_to_edit['remark'])
+                    # ပြင်ဆင်ရန် Field များ
+                    edit_uid = st.text_input("Update User ID", value=user_data['user_id'])
+                    edit_remark = st.text_area("Update Remark", value=user_data['remark'])
                     
-                    u_col1, u_col2 = st.columns(2)
-                    if u_col1.button("🆙 Update User", type="primary", use_container_width=True):
-                        supabase.table("user_setup").update({"user_id": up_uid, "remark": up_remark}).eq("id", user_to_edit['id']).execute()
-                        st.success("Updated!")
+                    col_btn1, col_btn2 = st.columns(2)
+                    
+                    # Update Button
+                    if col_btn1.button("🆙 Update User Now", type="primary", use_container_width=True):
+                        supabase.table("user_setup").update({
+                            "user_id": edit_uid, "remark": edit_remark
+                        }).eq("id", user_data['id']).execute()
+                        st.success("Successfully updated!")
                         st.rerun()
-                        
-                    if u_col2.button("🗑️ Delete User", use_container_width=True):
-                        supabase.table("user_setup").delete().eq("id", user_to_edit['id']).execute()
-                        st.warning("Deleted!")
+                    
+                    # Delete Button
+                    if col_btn2.button("🗑️ Delete User Permanently", use_container_width=True):
+                        supabase.table("user_setup").delete().eq("id", user_data['id']).execute()
+                        st.warning("User deleted!")
                         st.rerun()
         else:
-            st.info("No users found.")
+            st.info("No users found in database.")
+            
     except Exception as e:
-        st.error(f"Error: {e}")
-except Exception as e:
-    st.error(f"Error managing users: {e}")
+        # ဤနေရာတွင် Syntax မှန်ကန်ရန် try-except ကို သေချာပိတ်ထားပါ
+        st.error(f"Connection Error: {e}")
