@@ -1,4 +1,4 @@
-andas as pd
+pandas as pd
 import streamlit as st
 import pytz
 from supabase import create_client, Client
