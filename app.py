@@ -315,20 +315,30 @@ elif page == "🏦 Inward Transaction":
             st.write(f"**Total MMK (Auto):** {calc_total_mmk:,.2f}")
 
     # --- ၄။ SAVE ACTION ---
-    if st.button("💾 Save Inward Transaction", type="primary", use_container_width=True):
-    if r_name and r_nrc:
+    # --- Save Action အပိုင်းတွင် ဤကုဒ်ကို အစားထိုး အသုံးပြုပါ ---
+
+if st.button("💾 Save Inward Transaction", type="primary", use_container_width=True):
+    # ၁။ မဖြစ်မနေ လိုအပ်သော အချက်အလက်များ စစ်ဆေးခြင်း
+    if r_name and r_nrc and trans_no:
         try:
-            # ၁။ Blacklist အရင်စစ်သည်
+            # ၂။ Blacklist စစ်ဆေးခြင်း (Optional)
             check_bl = supabase.table("blacklist").select("name").eq("nrcno", r_nrc).execute()
             
             if check_bl.data:
                 st.error(f"❌ Blacklisted User: {check_bl.data[0]['name']} ({r_nrc})")
             else:
-                # ၂။ ဒေတာများကို စုစည်းသည် (Empty value များကို 0 ပြောင်းလဲခြင်း)
-                # ဤနေရာတွင် float() မပြောင်းခင် value ရှိမရှိ သေချာစစ်ဆေးပါသည်
+                # ၃။ Number များအား သေချာစွာ ပြောင်းလဲခြင်း (Data Cleaning)
+                def clean_float(val):
+                    try:
+                        return float(val) if val and str(val).strip() != "" else 0.0
+                    except:
+                        return 0.0
+
+                # ၄။ ပေးပို့မည့် Data Dictionary
+                # မှတ်ချက်- Key အမည်များသည် Database Column အမည်များနှင့် အတိအကျ တူရပါမည်
                 new_data = {
-                    "branch": branch,
-                    "transaction_no": trans_no,
+                    "branch": branch if branch else "Main",
+                    "transaction_no": str(trans_no),
                     "r_name": r_name,
                     "r_nrc": r_nrc,
                     "r_address": r_address,
@@ -341,28 +351,30 @@ elif page == "🏦 Inward Transaction":
                     "s_id": s_id,
                     "s_country": s_country,
                     "currency": currency,
-                    # တန်ဖိုးမရှိလျှင် 0.0 ဟု သတ်မှတ်ပေးခြင်း (Error မတက်အောင်)
-                    "amount": float(amount) if amount else 0.0,
-                    "mmk_rate": float(mmk_rate) if mmk_rate else 0.0,
-                    "mmk_allowance": float(mmk_allowance) if mmk_allowance else 0.0,
-                    "usd_equiv": float(usd_equiv) if usd_equiv else 0.0,
-                    "total_mmk": float(calc_total_mmk) if calc_total_mmk else 0.0,
+                    "amount": clean_float(amount),
+                    "mmk_rate": clean_float(mmk_rate),
+                    "mmk_allowance": clean_float(mmk_allowance),
+                    "usd_equiv": clean_float(usd_equiv),
+                    "total_mmk": clean_float(calc_total_mmk),
                     "created_at": now_yangon.isoformat()
                 }
 
-                # ၃။ Database ထဲသို့ ထည့်သည်
+                # ၅။ Supabase သို့ Insert လုပ်ခြင်း
                 response = supabase.table("inward_transactions").insert(new_data).execute()
                 
                 if response:
-                    st.success("✅ Transaction အောင်မြင်စွာ သိမ်းဆည်းပြီးပါပြီ။")
+                    st.success(f"✅ Transaction {trans_no} ကို အောင်မြင်စွာ သိမ်းဆည်းပြီးပါပြီ။")
                     st.balloons()
                     import time
                     time.sleep(1.5)
                     st.rerun()
+
         except Exception as e:
-            # Error အတိအကျကို ပြသပေးရန်
+            # Error ကို ပိုမို ရှင်းလင်းစွာ ပြသရန်
             st.error(f"❌ Database Error: {str(e)}")
-    else:            st.warning("⚠️ Receiver Name နှင့် NRC ကို ပြည့်စုံစွာ ဖြည့်သွင်းပါ။")           
+            st.info("အကြံပြုချက်- Database ရှိ Column Type (Double/Numeric) နှင့် ကုဒ်ထဲရှိ Data Type ကိုက်ညီမှု ရှိမရှိ စစ်ဆေးပါ။")
+    else:
+        st.warning("⚠️ Receiver Name, NRC နှင့် Transaction No တို့ကို ပြည့်စုံစွာ ဖြည့်သွင်းပါ။")           
             # --- ၂။ System Control Logic ---
 if page == "⚙️ System Control":
     st.title("⚙️ System Control & Setup")
