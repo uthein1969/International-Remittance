@@ -253,47 +253,44 @@ if page == "📋 Blacklist Info":
 # --- ၇။ Inward Transaction Page ---
 elif page == "🏦 Inward Transaction":
     st.title("🏦 Inward Transaction")
-    yangon_tz = pytz.timezone('Asia/Yangon')
-    now_yangon = datetime.now(yangon_tz)
-    formatted_time = now_yangon.strftime("%Y-%m-%d %H:%M:%S")
+    
     # ၁။ နောက်ဆုံး Transaction No ကို Database မှ ဆွဲထုတ်ခြင်း
     try:
-        # inward_transactions table မှ နောက်ဆုံးသွင်းထားသော data ကို ယူသည်
         last_trans = supabase.table("inward_transactions").select("transaction_no").order("created_at", desc=True).limit(1).execute()
-        
         if last_trans.data:
-            # နောက်ဆုံးနံပါတ်ကို integer ပြောင်းပြီး ၁ ပေါင်းသည်
             last_no = int(last_trans.data[0]['transaction_no'])
-            new_no = f"{last_no + 1:04d}" # 0001, 0002 ပုံစံဖြစ်အောင် 0 လေးလုံး format သတ်မှတ်သည်
+            new_no = f"{last_no + 1:04d}"
         else:
-            new_no = "0001" # Table ထဲမှာ ဘာမှမရှိသေးရင် 0001 က စမည်
+            new_no = "0001"
     except Exception:
-        new_no = "0001" # Error တက်ခဲ့ရင်လည်း 0001 ကပင် စမည်
-    # --- ၁။ Header Information ---
+        new_no = "0001"
+
+    # --- Header Information ---
     h_col1, h_col2, h_col3 = st.columns(3)
     with h_col1:
-        st.text_input("Date:", value=formatted_time, disabled=True)
+        st.text_input("Date:", value=now_yangon.strftime("%Y-%m-%d %H:%M:%S"), disabled=True)
     with h_col2:
-        branch = st.selectbox("Select Branch", ["", "Yangon Branch", "Mandalay Branch", "Nay Pyi Taw Branch"])
+        branch = st.selectbox("Select Branch", ["Yangon Branch", "Mandalay Branch", "Nay Pyi Taw Branch"])
     with h_col3:
-        trans_no = st.text_input("Transaction No:", value="0001")
+        # Auto-generated number ကို အသုံးပြုရန် value ပြောင်းထားသည်
+        trans_no = st.text_input("Transaction No:", value=new_no)
 
     # --- ၂။ RECEIVER INFORMATION ---
     st.subheader("🔵 RECEIVER INFORMATION :")
     with st.container(border=True):
         r_col1, r_col2 = st.columns(2)
         r_name = r_col1.text_input("Receiver Name:")
-        r_nrc = r_col2.selectbox("Receiver NRC:", ["", "12/THA GA KA (N) 048123", "12/THA GA KA (N) 048127"]) # NRC List များ
+        # NRC ကို selectbox အစား text_input ဖြင့် အသုံးပြုခြင်းက ပိုအဆင်ပြေနိုင်သည်
+        r_nrc = r_col2.text_input("Receiver NRC:")
 
         r_addr_col, r_ph_col, r_purp_col = st.columns([2, 1, 1])
         r_address = r_addr_col.text_input("Receiver Address:")
         r_phone = r_ph_col.text_input("Receiver Phone:")
-        r_purpose = r_purp_col.selectbox("Purpose of Transaction", ["", "Family Support", "Business", "Gift"])
+        r_purpose = r_purp_col.selectbox("Purpose", ["Family Support", "Business", "Gift"])
 
         r_state_col, r_point_col = st.columns(2)
-        r_state = r_state_col.selectbox("State & Division", ["", "Yangon", "Mandalay", "Shan", "Bago"])
+        r_state = r_state_col.selectbox("State & Division", ["Yangon", "Mandalay", "Shan", "Bago"])
         r_point = r_point_col.text_input("Withdraw Point:")
-        
         r_remark = st.text_area("Remark for Withdraw Point:")
 
     # --- ၃။ SENDER INFORMATION ---
@@ -307,41 +304,27 @@ elif page == "🏦 Inward Transaction":
         s_cur_col, s_mmk_col, s_usd_col = st.columns(3)
         with s_cur_col:
             currency = st.selectbox("Currency", ["THB", "USD", "SGD"])
-            amount = st.number_input("Amount", min_value=0.0)
+            amount = st.number_input("Amount", min_value=0.0, format="%.2f")
         with s_mmk_col:
-            mmk_rate = st.number_input("MMK Rate", min_value=0.0)
-            mmk_allowance = st.number_input("MMK Allowance", min_value=0.0)
+            mmk_rate = st.number_input("MMK Rate", min_value=0.0, format="%.2f")
+            mmk_allowance = st.number_input("MMK Allowance", min_value=0.0, format="%.2f")
         with s_usd_col:
-            usd_equiv = st.number_input("USD Equivalent", min_value=0.0)
-            total_mmk = st.number_input("Total MMK", min_value=0.0)
+            usd_equiv = st.number_input("USD Equivalent", min_value=0.0, format="%.2f")
+            # Total MMK ကို Auto တွက်ရန် formula ထည့်ပေးထားသည်
+            calc_total_mmk = (amount * mmk_rate) + mmk_allowance
+            st.write(f"**Total MMK (Auto):** {calc_total_mmk:,.2f}")
 
-    # --- ၄။ UPLOAD FILE ---
-    st.subheader("📤 Upload File")
-    uploaded_file = st.file_uploader("Choose File", type=['png', 'jpg', 'pdf'])
-
-    # --- ၈။ SAVE ACTION ---
-    if st.button("💾 Save", type="primary"):
-        if r_nrc:
-            # Blacklist စစ်ဆေးခြင်း
-            check_bl = supabase.table("blacklist").select("name").eq("nrcno", r_nrc).execute()
-            if len(check_bl.data) > 0:
-                st.error(f"❌ STOP! {r_nrc} သည် Blacklist စာရင်းဝင် ({check_bl.data[0]['name']}) ဖြစ်နေပါသည်။")
-            else:
-                st.success("✅ Transaction အချက်အလက်များကို သိမ်းဆည်းလိုက်ပါပြီ။")
-        else:
-            st.warning("⚠️ Receiver NRC ကို ဖြည့်သွင်းပေးပါ။")
-
-    # Save Action with Blacklist Check
+    # --- ၄။ SAVE ACTION ---
     if st.button("💾 Save Inward Transaction", type="primary", use_container_width=True):
         if r_name and r_nrc:
             try:
                 # ၁။ Blacklist အရင်စစ်သည်
                 check_bl = supabase.table("blacklist").select("name").eq("nrcno", r_nrc).execute()
                 
-                if len(check_bl.data) > 0:
-                    st.error(f"❌ Blacklisted User: {check_bl.data[0]['name']}")
+                if check_bl.data:
+                    st.error(f"❌ Blacklisted User: {check_bl.data[0]['name']} ({r_nrc})")
                 else:
-                    # ၂။ ဒေတာများကို စုစည်းသည်
+                    # ၂။ ဒေတာများကို စုစည်းသည် (Key အမည်များကို Table Column နှင့် တူအောင်စစ်ပါ)
                     new_data = {
                         "branch": branch,
                         "transaction_no": trans_no,
@@ -357,27 +340,27 @@ elif page == "🏦 Inward Transaction":
                         "s_id": s_id,
                         "s_country": s_country,
                         "currency": currency,
-                        "amount": float(amount) if amount else 0,
-                        "mmk_rate": float(mmk_rate) if mmk_rate else 0,
-                        "mmk_allowance": float(mmk_allowance) if mmk_allowance else 0,
-                        "usd_equiv": float(usd_equiv) if usd_equiv else 0,
-                        "total_mmk": float(total_mmk) if total_mmk else 0
+                        "amount": float(amount),
+                        "mmk_rate": float(mmk_rate),
+                        "mmk_allowance": float(mmk_allowance),
+                        "usd_equiv": float(usd_equiv),
+                        "total_mmk": float(calc_total_mmk),
+                        "created_at": now_yangon.isoformat()
                     }
 
                     # ၃။ Database ထဲသို့ ထည့်သည်
                     response = supabase.table("inward_transactions").insert(new_data).execute()
                     
                     if response.data:
-                        st.success("✅ ဒေတာကို အောင်မြင်စွာ သိမ်းဆည်းပြီးပါပြီ။")
+                        st.success("✅ Transaction အောင်မြင်စွာ သိမ်းဆည်းပြီးပါပြီ။")
                         st.balloons()
-                        # ခဏစောင့်ပြီးမှ Refresh လုပ်ရန်
                         import time
-                        time.sleep(2)
+                        time.sleep(1.5)
                         st.rerun()
             except Exception as e:
-                st.error(f"Error saving data: {e}") # ဘာလို့ မသိမ်းလဲဆိုတဲ့ အဖြေကို ဤနေရာတွင် ပြပါလိမ့်မည်
+                st.error(f"❌ Database Error: {e}")
         else:
-            st.warning("⚠️ Receiver Name နှင့် NRC ကို ဖြည့်စွက်ပါ။")
+            st.warning("⚠️ Receiver Name နှင့် NRC ကို ပြည့်စုံစွာ ဖြည့်သွင်းပါ။")           
             # --- ၂။ System Control Logic ---
 if page == "⚙️ System Control":
     st.title("⚙️ System Control & Setup")
