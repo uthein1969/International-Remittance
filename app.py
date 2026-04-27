@@ -342,7 +342,7 @@ elif page == "🏦 Inward Transaction":
                         "mmk_rate": float(mmk_rate) if mmk_rate else 0,
                         "mmk_allowance": float(mmk_allowance) if mmk_allowance else 0,
                         "usd_equiv": float(usd_equiv) if usd_equiv else 0,
-                        "total_mmk": float(total_mmk) if total_mmk else 0
+                        "total_mmk": safe_float(calc_total_mmk) if total_mmk else 0
                     }
 
                     # ၃။ Database ထဲသို့ ထည့်သည်
