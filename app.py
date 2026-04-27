@@ -346,7 +346,7 @@ elif page == "🏦 Inward Transaction":
                         "s_id": s_id,
                         "s_country": s_country,
                         "currency": currency,
-                        "amount": float(amount) if amount else 0,
+                        "amount": safe_float(amount) if amount else 0,
                         "mmk_rate": float(mmk_rate) if mmk_rate else 0,
                         "mmk_allowance": float(mmk_allowance) if mmk_allowance else 0,
                         "usd_equiv": float(usd_equiv) if usd_equiv else 0,
