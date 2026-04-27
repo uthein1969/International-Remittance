@@ -309,8 +309,10 @@ elif page == "🏦 Inward Transaction":
             mmk_allowance = st.number_input("MMK Allowance", min_value=0.0, format="%.2f")
         with s_usd_col:
             usd_equiv = st.number_input("USD Equivalent", min_value=0.0, format="%.2f")
-            calc_total_mmk = (amount * mmk_rate) + mmk_allowance
-            st.markdown(f"### Total MMK: **{calc_total_mmk:,.2f}**")
+        
+        # --- ဒီနေရာကို Column တွေရဲ့ အပြင်ဘက် (Indent အပြင်) ကို ထုတ်ရေးပါ ---
+        calc_total_mmk = (amount * mmk_rate) + mmk_allowance
+        st.markdown(f"### Total MMK: **{calc_total_mmk:,.2f}**")
 
     # --- ၄။ SAVE ACTION (Indent ထဲသို့ ထည့်သွင်းထားသည်) ---
     if st.button("💾 Save Inward Transaction", type="primary", use_container_width=True):
