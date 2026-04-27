@@ -315,11 +315,11 @@ elif page == "🏦 Inward Transaction":
             st.write(f"**Total MMK (Auto):** {calc_total_mmk:,.2f}")
 
     # --- ၄။ SAVE ACTION ---
-  
+
 if st.button("💾 Save Inward Transaction", type="primary", use_container_width=True):
     if r_name and r_nrc:
         try:
-            # ၁။ Numeric Data များကို သန့်စင်ပေးမည့် Function
+            # ၁။ Numeric Data များကို သေချာပေါက် ဂဏန်းဖြစ်အောင် ပြောင်းပေးမည့် Function
             def safe_float(val):
                 try:
                     if val is None or str(val).strip() == "":
@@ -334,8 +334,7 @@ if st.button("💾 Save Inward Transaction", type="primary", use_container_width
             if check_bl.data:
                 st.error(f"❌ Blacklisted User: {check_bl.data[0]['name']} ({r_nrc})")
             else:
-                # ၃။ Database Column အမည်များနှင့် အတိအကျတူသော Key များဖြင့် စုစည်းခြင်း
-                # မှတ်ချက်- 'Inward Transaction table.png' ထဲက Column အမည်များကို အသုံးပြုထားသည်
+                # ၃။ Database Column နှင့် အတိအကျတူသော Key များဖြင့် စုစည်းခြင်း
                 new_data = {
                     "branch": branch if branch else "Main",
                     "transaction_no": str(trans_no),
@@ -371,10 +370,10 @@ if st.button("💾 Save Inward Transaction", type="primary", use_container_width
                     st.rerun()
 
         except Exception as e:
-            # Error Message ကို အသေးစိတ်ပြသရန်
+            # Error Message အပြည့်အစုံကို ပြသရန်
             st.error(f"❌ Database Error: {str(e)}")
     else:
-        st.warning("⚠️ Receiver Name နှင့် NRC ကို ပြည့်စုံစွာ ဖြည့်သွင်းပေးပါ။")            
+        st.warning("⚠️ Receiver Name နှင့် NRC ကို ဖြည့်သွင်းပေးပါ။")
         # --- ၂။ System Control Logic ---
 if page == "⚙️ System Control":
     st.title("⚙️ System Control & Setup")
