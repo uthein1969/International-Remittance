@@ -270,9 +270,9 @@ elif page == "🏦 Inward Transaction":
     with h_col1:
         st.text_input("Date:", value=now_yangon.strftime("%Y-%m-%d %H:%M:%S"), disabled=True)
     with h_col2:
+        # Branch တွေကို DB ထဲက ဆွဲထုတ်သုံးရင် ပိုကောင်းပါတယ် (လက်ရှိ version အတွက် selectbox ပဲထားပါဦးမည်)
         branch = st.selectbox("Select Branch", ["Yangon Branch", "Mandalay Branch", "Nay Pyi Taw Branch"])
     with h_col3:
-        # Auto-generated number ကို အသုံးပြုရန် value ပြောင်းထားသည်
         trans_no = st.text_input("Transaction No:", value=new_no)
 
     # --- ၂။ RECEIVER INFORMATION ---
@@ -280,7 +280,6 @@ elif page == "🏦 Inward Transaction":
     with st.container(border=True):
         r_col1, r_col2 = st.columns(2)
         r_name = r_col1.text_input("Receiver Name:")
-        # NRC ကို selectbox အစား text_input ဖြင့် အသုံးပြုခြင်းက ပိုအဆင်ပြေနိုင်သည်
         r_nrc = r_col2.text_input("Receiver NRC:")
 
         r_addr_col, r_ph_col, r_purp_col = st.columns([2, 1, 1])
@@ -310,71 +309,43 @@ elif page == "🏦 Inward Transaction":
             mmk_allowance = st.number_input("MMK Allowance", min_value=0.0, format="%.2f")
         with s_usd_col:
             usd_equiv = st.number_input("USD Equivalent", min_value=0.0, format="%.2f")
-            # Total MMK ကို Auto တွက်ရန် formula ထည့်ပေးထားသည်
             calc_total_mmk = (amount * mmk_rate) + mmk_allowance
-            st.write(f"**Total MMK (Auto):** {calc_total_mmk:,.2f}")
+            st.markdown(f"### Total MMK: **{calc_total_mmk:,.2f}**")
 
-    # --- ၄။ SAVE ACTION ---
+    # --- ၄။ SAVE ACTION (Indent ထဲသို့ ထည့်သွင်းထားသည်) ---
+    if st.button("💾 Save Inward Transaction", type="primary", use_container_width=True):
+        if r_name and r_nrc:
+            try:
+                def safe_float(val):
+                    try:
+                        if val is None or str(val).strip() == "": return 0.0
+                        return float(val)
+                    except: return 0.0
 
-if st.button("💾 Save Inward Transaction", type="primary", use_container_width=True):
-    if r_name and r_nrc:
-        try:
-            # ၁။ Numeric Data များကို သေချာပေါက် ဂဏန်းဖြစ်အောင် ပြောင်းပေးမည့် Function
-            def safe_float(val):
-                try:
-                    if val is None or str(val).strip() == "":
-                        return 0.0
-                    return float(val)
-                except (ValueError, TypeError):
-                    return 0.0
-
-            # ၂။ Blacklist စစ်ဆေးခြင်း
-            check_bl = supabase.table("blacklist").select("name").eq("nrcno", r_nrc).execute()
-            
-            if check_bl.data:
-                st.error(f"❌ Blacklisted User: {check_bl.data[0]['name']} ({r_nrc})")
-            else:
-                # ၃။ Database Column နှင့် အတိအကျတူသော Key များဖြင့် စုစည်းခြင်း
-                new_data = {
-                    "branch": branch if branch else "Main",
-                    "transaction_no": str(trans_no),
-                    "r_name": r_name,
-                    "r_nrc": r_nrc,
-                    "r_address": r_address,
-                    "r_phone": r_phone,
-                    "r_purpose": r_purpose,
-                    "r_state": r_state,
-                    "r_withdraw_point": r_point,
-                    "r_remark": r_remark,
-                    "s_name": s_name,
-                    "s_id": s_id,
-                    "s_country": s_country,
-                    "currency": currency,
-                    # Numeric field အားလုံးကို safe_float ဖြင့် အုပ်ထားခြင်းဖြင့် Error ကို ကာကွယ်သည်
-                    "amount": safe_float(amount),
-                    "mmk_rate": safe_float(mmk_rate),
-                    "mmk_allowance": safe_float(mmk_allowance),
-                    "usd_equiv": safe_float(usd_equiv),
-                    "total_mmk": safe_float(calc_total_mmk),
-                    "created_at": now_yangon.isoformat()
-                }
-
-                # ၄။ Supabase သို့ ပေးပို့ခြင်း
-                response = supabase.table("inward_transactions").insert(new_data).execute()
+                check_bl = supabase.table("blacklist").select("name").eq("nrcno", r_nrc).execute()
                 
-                if response:
-                    st.success(f"✅ Transaction {trans_no} ကို အောင်မြင်စွာ သိမ်းဆည်းပြီးပါပြီ။")
+                if check_bl.data:
+                    st.error(f"❌ Blacklisted User: {check_bl.data[0]['name']} ({r_nrc})")
+                else:
+                    new_data = {
+                        "branch": branch, "transaction_no": str(trans_no),
+                        "r_name": r_name, "r_nrc": r_nrc, "r_address": r_address,
+                        "r_phone": r_phone, "r_purpose": r_purpose, "r_state": r_state,
+                        "r_withdraw_point": r_point, "r_remark": r_remark,
+                        "s_name": s_name, "s_id": s_id, "s_country": s_country,
+                        "currency": currency, "amount": safe_float(amount),
+                        "mmk_rate": safe_float(mmk_rate), "mmk_allowance": safe_float(mmk_allowance),
+                        "usd_equiv": safe_float(usd_equiv), "total_mmk": safe_float(calc_total_mmk),
+                        "created_at": now_yangon.isoformat()
+                    }
+                    supabase.table("inward_transactions").insert(new_data).execute()
+                    st.success("✅ Transaction Saved Successfully!")
                     st.balloons()
-                    import time
-                    time.sleep(1.5)
                     st.rerun()
-
-        except Exception as e:
-            # Error Message အပြည့်အစုံကို ပြသရန်
-            st.error(f"❌ Database Error: {str(e)}")
-    else:
-        st.warning("⚠️ Receiver Name နှင့် NRC ကို ဖြည့်သွင်းပေးပါ။")
-        # --- ၂။ System Control Logic ---
+            except Exception as e:
+                st.error(f"❌ Error: {str(e)}")
+        else:
+            st.warning("⚠️ Please fill Name and NRC.")        # --- ၂။ System Control Logic ---
 if page == "⚙️ System Control":
     st.title("⚙️ System Control & Setup")
     
