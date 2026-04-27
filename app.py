@@ -316,51 +316,53 @@ elif page == "🏦 Inward Transaction":
 
     # --- ၄။ SAVE ACTION ---
     if st.button("💾 Save Inward Transaction", type="primary", use_container_width=True):
-        if r_name and r_nrc:
-            try:
-                # ၁။ Blacklist အရင်စစ်သည်
-                check_bl = supabase.table("blacklist").select("name").eq("nrcno", r_nrc).execute()
-                
-                if check_bl.data:
-                    st.error(f"❌ Blacklisted User: {check_bl.data[0]['name']} ({r_nrc})")
-                else:
-                    # ၂။ ဒေတာများကို စုစည်းသည် (Key အမည်များကို Table Column နှင့် တူအောင်စစ်ပါ)
-                    new_data = {
-                        "branch": branch,
-                        "transaction_no": trans_no,
-                        "r_name": r_name,
-                        "r_nrc": r_nrc,
-                        "r_address": r_address,
-                        "r_phone": r_phone,
-                        "r_purpose": r_purpose,
-                        "r_state": r_state,
-                        "r_withdraw_point": r_point,
-                        "r_remark": r_remark,
-                        "s_name": s_name,
-                        "s_id": s_id,
-                        "s_country": s_country,
-                        "currency": currency,
-                        "amount": float(amount),
-                        "mmk_rate": float(mmk_rate),
-                        "mmk_allowance": float(mmk_allowance),
-                        "usd_equiv": float(usd_equiv),
-                        "total_mmk": float(calc_total_mmk),
-                        "created_at": now_yangon.isoformat()
-                    }
+    if r_name and r_nrc:
+        try:
+            # ၁။ Blacklist အရင်စစ်သည်
+            check_bl = supabase.table("blacklist").select("name").eq("nrcno", r_nrc).execute()
+            
+            if check_bl.data:
+                st.error(f"❌ Blacklisted User: {check_bl.data[0]['name']} ({r_nrc})")
+            else:
+                # ၂။ ဒေတာများကို စုစည်းသည် (Empty value များကို 0 ပြောင်းလဲခြင်း)
+                # ဤနေရာတွင် float() မပြောင်းခင် value ရှိမရှိ သေချာစစ်ဆေးပါသည်
+                new_data = {
+                    "branch": branch,
+                    "transaction_no": trans_no,
+                    "r_name": r_name,
+                    "r_nrc": r_nrc,
+                    "r_address": r_address,
+                    "r_phone": r_phone,
+                    "r_purpose": r_purpose,
+                    "r_state": r_state,
+                    "r_withdraw_point": r_point,
+                    "r_remark": r_remark,
+                    "s_name": s_name,
+                    "s_id": s_id,
+                    "s_country": s_country,
+                    "currency": currency,
+                    # တန်ဖိုးမရှိလျှင် 0.0 ဟု သတ်မှတ်ပေးခြင်း (Error မတက်အောင်)
+                    "amount": float(amount) if amount else 0.0,
+                    "mmk_rate": float(mmk_rate) if mmk_rate else 0.0,
+                    "mmk_allowance": float(mmk_allowance) if mmk_allowance else 0.0,
+                    "usd_equiv": float(usd_equiv) if usd_equiv else 0.0,
+                    "total_mmk": float(calc_total_mmk) if calc_total_mmk else 0.0,
+                    "created_at": now_yangon.isoformat()
+                }
 
-                    # ၃။ Database ထဲသို့ ထည့်သည်
-                    response = supabase.table("inward_transactions").insert(new_data).execute()
-                    
-                    if response.data:
-                        st.success("✅ Transaction အောင်မြင်စွာ သိမ်းဆည်းပြီးပါပြီ။")
-                        st.balloons()
-                        import time
-                        time.sleep(1.5)
-                        st.rerun()
-            except Exception as e:
-                st.error(f"❌ Database Error: {e}")
-        else:
-            st.warning("⚠️ Receiver Name နှင့် NRC ကို ပြည့်စုံစွာ ဖြည့်သွင်းပါ။")           
+                # ၃။ Database ထဲသို့ ထည့်သည်
+                response = supabase.table("inward_transactions").insert(new_data).execute()
+                
+                if response:
+                    st.success("✅ Transaction အောင်မြင်စွာ သိမ်းဆည်းပြီးပါပြီ။")
+                    st.balloons()
+                    import time
+                    time.sleep(1.5)
+                    st.rerun()
+        except Exception as e:
+            # Error အတိအကျကို ပြသပေးရန်
+            st.error(f"❌ Database Error: {str(e)}")
+    else:            st.warning("⚠️ Receiver Name နှင့် NRC ကို ပြည့်စုံစွာ ဖြည့်သွင်းပါ။")           
             # --- ၂။ System Control Logic ---
 if page == "⚙️ System Control":
     st.title("⚙️ System Control & Setup")
