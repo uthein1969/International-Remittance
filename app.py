@@ -6,7 +6,13 @@ from datetime import datetime
 # --- အချိန်သတ်မှတ်ချက် (Login မဝင်ခင်ကတည်းက သိနေစေရန် ဤနေရာတွင်ထားပါ) ---
 yangon_tz = pytz.timezone('Asia/Yangon')
 now_yangon = datetime.now(yangon_tz)
-
+def safe_float(val):
+    try:
+        if val is None or str(val).strip() == "":
+            return 0.0
+        return float(val)
+    except (ValueError, TypeError):
+        return 0.0
 # --- ၁။ Setup & Connections ---
 URL = st.secrets["SUPABASE_URL"]
 KEY = st.secrets["SUPABASE_KEY"]
