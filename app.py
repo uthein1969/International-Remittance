@@ -315,17 +315,16 @@ elif page == "🏦 Inward Transaction":
             st.write(f"**Total MMK (Auto):** {calc_total_mmk:,.2f}")
 
     # --- ၄။ SAVE ACTION ---
-    # --- Save Action အပိုင်းတွင် ဤကုဒ်ဖြင့် အစားထိုးပါ ---
-
+  
 if st.button("💾 Save Inward Transaction", type="primary", use_container_width=True):
     if r_name and r_nrc:
         try:
             # ၁။ Numeric Data များကို သန့်စင်ပေးမည့် Function
-            def clean_numeric(value):
+            def safe_float(val):
                 try:
-                    if value is None or str(value).strip() == "":
+                    if val is None or str(val).strip() == "":
                         return 0.0
-                    return float(value)
+                    return float(val)
                 except (ValueError, TypeError):
                     return 0.0
 
@@ -335,7 +334,8 @@ if st.button("💾 Save Inward Transaction", type="primary", use_container_width
             if check_bl.data:
                 st.error(f"❌ Blacklisted User: {check_bl.data[0]['name']} ({r_nrc})")
             else:
-                # ၃။ Database Column နှင့် အတိအကျတူသော Key များဖြင့် စုစည်းခြင်း
+                # ၃။ Database Column အမည်များနှင့် အတိအကျတူသော Key များဖြင့် စုစည်းခြင်း
+                # မှတ်ချက်- 'Inward Transaction table.png' ထဲက Column အမည်များကို အသုံးပြုထားသည်
                 new_data = {
                     "branch": branch if branch else "Main",
                     "transaction_no": str(trans_no),
@@ -351,12 +351,12 @@ if st.button("💾 Save Inward Transaction", type="primary", use_container_width
                     "s_id": s_id,
                     "s_country": s_country,
                     "currency": currency,
-                    # Numeric field အားလုံးကို clean_numeric ဖြင့် အုပ်ထားသည်
-                    "amount": clean_numeric(amount),
-                    "mmk_rate": clean_numeric(mmk_rate),
-                    "mmk_allowance": clean_numeric(mmk_allowance),
-                    "usd_equiv": clean_numeric(usd_equiv),
-                    "total_mmk": clean_numeric(calc_total_mmk),
+                    # Numeric field အားလုံးကို safe_float ဖြင့် အုပ်ထားခြင်းဖြင့် Error ကို ကာကွယ်သည်
+                    "amount": safe_float(amount),
+                    "mmk_rate": safe_float(mmk_rate),
+                    "mmk_allowance": safe_float(mmk_allowance),
+                    "usd_equiv": safe_float(usd_equiv),
+                    "total_mmk": safe_float(calc_total_mmk),
                     "created_at": now_yangon.isoformat()
                 }
 
@@ -371,9 +371,11 @@ if st.button("💾 Save Inward Transaction", type="primary", use_container_width
                     st.rerun()
 
         except Exception as e:
+            # Error Message ကို အသေးစိတ်ပြသရန်
             st.error(f"❌ Database Error: {str(e)}")
     else:
-        st.warning("⚠️ Receiver Name နှင့် NRC ကို ဖြည့်သွင်းပေးပါ။")            # --- ၂။ System Control Logic ---
+        st.warning("⚠️ Receiver Name နှင့် NRC ကို ပြည့်စုံစွာ ဖြည့်သွင်းပေးပါ။")            
+        # --- ၂။ System Control Logic ---
 if page == "⚙️ System Control":
     st.title("⚙️ System Control & Setup")
     
