@@ -314,7 +314,9 @@ elif page == "🏦 Inward Transaction":
             mmk_rate = st.number_input("MMK Rate", min_value=0.0, format="%.2f")
             mmk_allowance = st.number_input("MMK Allowance", min_value=0.0, format="%.2f")
         with s_usd_col:
-            usd_equiv = st.number_input("USD Equivalent", min_value=0.0, format="%.2f")
+            usd_equiv = st.number_input("USD Equivalent", min_value=0.0)
+    # ဤနေရာတွင် နာမည်ကို 'total_mmk' ဟု တိတိကျကျ ပေးပါ
+            total_mmk = st.number_input("Total MMK", min_value=0.0)
         
         # --- ဒီနေရာကို Column တွေရဲ့ အပြင်ဘက် (Indent အပြင်) ကို ထုတ်ရေးပါ ---
         calc_total_mmk = (amount * mmk_rate) + mmk_allowance
@@ -354,8 +356,8 @@ if st.button("💾 Save Inward Transaction", type="primary", use_container_width
                     "amount": float(amount),
                     "mmk_rate": float(mmk_rate),
                     "mmk_allowance": float(mmk_allowance),
-                    "usd_equiv": float(usd_equiv),
-                    "total_mmk": float(total_mmk)
+                    "usd_equiv": float(usd_equiv) if usd_equiv else 0,
+                    "total_mmk": float(total_mmk) if total_mmk else 0 # ဒီနေရာမှာ total_mmk variable ရှိနေရပါမယ်
                 }
 
                 # 4. Database Insert
