@@ -321,53 +321,56 @@ elif page == "🏦 Inward Transaction":
         st.markdown(f"### Total MMK: **{calc_total_mmk:,.2f}**")
 
     # --- ၄။ SAVE ACTION (Indent ထဲသို့ ထည့်သွင်းထားသည်) ---
-    if st.button("💾 Save Inward Transaction", type="primary", use_container_width=True):
-        if r_name and r_nrc:
-            try:
-                # ၁။ Blacklist အရင်စစ်သည်
-                check_bl = supabase.table("blacklist").select("name").eq("nrcno", r_nrc).execute()
+    # --- Save Action with Blacklist Check ---
+if st.button("💾 Save Inward Transaction", type="primary", use_container_width=True):
+    # 1. Validation Check
+    if not r_name or not r_nrc:
+        st.warning("⚠️ Receiver Name နှင့် NRC ကို ဖြည့်စွက်ပါ။")
+    else:
+        try:
+            # 2. Blacklist Check
+            check_bl = supabase.table("blacklist").select("name").eq("nrcno", r_nrc).execute()
+            
+            if len(check_bl.data) > 0:
+                st.error(f"❌ Blacklisted User: {check_bl.data[0]['name']}")
+            else:
+                # 3. Data Preparation
+                # Ensure numbers are actual floats for the 'numeric' columns in SQL
+                new_data = {
+                    "branch": branch,
+                    "transaction_no": trans_no,
+                    "r_name": r_name,
+                    "r_nrc": r_nrc,
+                    "r_address": r_address,
+                    "r_phone": r_phone,
+                    "r_purpose": r_purpose,
+                    "r_state": r_state,
+                    "r_withdraw_point": r_point,
+                    "r_remark": r_remark,
+                    "s_name": s_name,
+                    "s_id": s_id,
+                    "s_country": s_country,
+                    "currency": currency,
+                    "amount": float(amount),
+                    "mmk_rate": float(mmk_rate),
+                    "mmk_allowance": float(mmk_allowance),
+                    "usd_equiv": float(usd_equiv),
+                    "total_mmk": float(total_mmk)
+                }
+
+                # 4. Database Insert
+                response = supabase.table("inward_transactions").insert(new_data).execute()
                 
-                if len(check_bl.data) > 0:
-                    st.error(f"❌ Blacklisted User: {check_bl.data[0]['name']}")
-                else:
-                    # ၂။ ဒေတာများကို စုစည်းသည်
-                    new_data = {
-                        "branch": branch,
-                        "transaction_no": trans_no,
-                        "r_name": r_name,
-                        "r_nrc": r_nrc,
-                        "r_address": r_address,
-                        "r_phone": r_phone,
-                        "r_purpose": r_purpose,
-                        "r_state": r_state,
-                        "r_withdraw_point": r_point,
-                        "r_remark": r_remark,
-                        "s_name": s_name,
-                        "s_id": s_id,
-                        "s_country": s_country,
-                        "currency": currency,
-                        "amount": safe_float(amount) if amount else 0,
-                        "mmk_rate": float(mmk_rate) if mmk_rate else 0,
-                        "mmk_allowance": float(mmk_allowance) if mmk_allowance else 0,
-                        "usd_equiv": float(usd_equiv) if usd_equiv else 0,
-                        "total_mmk": safe_float(calc_total_mmk),
-                        "created_at": now_yangon.isoformat()
-        }
-                        
-                    # ၃။ Database ထဲသို့ ထည့်သည်
-                    response = supabase.table("inward_transactions").insert(new_data).execute()
-                    
-                    if response.data:
-                        st.success("✅ ဒေတာကို အောင်မြင်စွာ သိမ်းဆည်းပြီးပါပြီ။")
-                        st.balloons()
-                        # ခဏစောင့်ပြီးမှ Refresh လုပ်ရန်
-                        import time
-                        time.sleep(2)
-                        st.rerun()
-            except Exception as e:
-                st.error(f"Error saving data: {e}") # ဘာလို့ မသိမ်းလဲဆိုတဲ့ အဖြေကို ဤနေရာတွင် ပြပါလိမ့်မည်
-        else:
-            st.warning("⚠️ Receiver Name နှင့် NRC ကို ဖြည့်စွက်ပါ။")        
+                if response.data:
+                    st.success("✅ ဒေတာကို အောင်မြင်စွာ သိမ်းဆည်းပြီးပါပြီ။")
+                    st.balloons()
+                    import time
+                    time.sleep(1.5)
+                    st.rerun()
+
+        except Exception as e:
+            # Catching the specific RLS or Data Type errors
+            st.error(f"Database Error: {e}")            
             # --- ၂။ System Control Logic ---
 if page == "⚙️ System Control":
     st.title("⚙️ System Control & Setup")
