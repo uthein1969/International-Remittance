@@ -256,11 +256,12 @@ with st.expander("➕ Add New Blacklist Record", expanded=True):
     st.subheader("🛠️ Search & Edit/Delete Blacklist")
 
     # ၁။ Search Input (အမည် သို့မဟုတ် NRC ဖြင့် ရှာရန်)
-    search_query = st.text_input("Search by Name or NRC (ရှာဖွေရန် ရိုက်ထည့်ပါ)", placeholder="e.g. Maung Win or 12/tha ga ka")
+search_query = st.text_input("Search by Name or NRC", placeholder="ဥပမာ- 13/nakhana")
 
     if search_query:
         try:
-            # Search logic
+            # ilike ကိုသုံးပြီး ရှာဖွေခြင်း (စာလုံးအကြီးအသေး မရွေးပါ)
+            # အမည် သို့မဟုတ် မှတ်ပုံတင်နံပါတ်ထဲမှာ search_query ပါဝင်တာနဲ့ ဆွဲထုတ်ပါမယ်
             search_res = supabase.table("blacklist").select("*").or_(f"name.ilike.%{search_query}%,nrcno.ilike.%{search_query}%").execute()
             
             if search_res.data:
@@ -303,8 +304,8 @@ with st.expander("➕ Add New Blacklist Record", expanded=True):
                                     st.rerun()
                                 except Exception as e:
                                     st.error(f"Delete Error: {e}")
-            else:
-                st.info("No matching records found.")
+else:
+                st.info("No matching records found. (ရိုက်ထည့်ထားသော စာလုံးပေါင်း မှန်မမှန် ပြန်စစ်ပေးပါ)")
         except Exception as e:
             st.error(f"Search Error: {e}")
     else:
