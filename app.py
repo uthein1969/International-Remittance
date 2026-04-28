@@ -272,38 +272,38 @@ if search_query:
             if selected_key:
                 target = search_options[selected_key]
                     
-                    # Edit Form ကို Box လေးဖြင့် ပြသခြင်း
-                    with st.container(border=True):
-                        col_e1, col_e2 = st.columns(2)
-                        with col_e1:
-                            u_name = st.text_input("Edit Name", value=target.get('name', ''))
-                            u_nrc = st.text_input("Edit NRC", value=target.get('nrcno', ''))
-                        with col_e2:
-                            # remark ဟု ပြောင်းလဲအသုံးပြုထားပါသည်
-                            u_reason = st.text_area("Edit Reason", value=target.get('remark', '') or "", height=115)
+            # Edit Form ကို Box လေးဖြင့် ပြသခြင်း
+            with st.container(border=True):
+                col_e1, col_e2 = st.columns(2)
+                with col_e1:
+                     u_name = st.text_input("Edit Name", value=target.get('name', ''))
+                    u_nrc = st.text_input("Edit NRC", value=target.get('nrcno', ''))
+                with col_e2:
+             # remark ဟု ပြောင်းလဲအသုံးပြုထားပါသည်
+                    u_reason = st.text_area("Edit Reason", value=target.get('remark', '') or "", height=115)
                         
-                        b_col1, b_col2 = st.columns(2)
-                        with b_col1:
-                            if st.button("🔄 Update Record", type="secondary", use_container_width=True):
-                                try:
-                                    supabase.table("blacklist").update({
-                                        "name": u_name, 
-                                        "nrcno": u_nrc, 
-                                        "remark": u_reason
-                                    }).eq("id", target['id']).execute()
-                                    st.success("✅ Updated successfully!")
-                                    st.rerun()
+                    b_col1, b_col2 = st.columns(2)
+                with b_col1:
+                    if st.button("🔄 Update Record", type="secondary", use_container_width=True):
+                        try:
+                            supabase.table("blacklist").update({
+                                "name": u_name, 
+                                "nrcno": u_nrc, 
+                                "remark": u_reason
+                                }).eq("id", target['id']).execute()
+                                st.success("✅ Updated successfully!")
+                                st.rerun()
                                 except Exception as e:
-                                    st.error(f"Update Error: {e}")
+                                st.error(f"Update Error: {e}")
                                     
-                        with b_col2:
-                            if st.button("🗑️ Delete Record", type="primary", use_container_width=True):
-                                try:
-                                    supabase.table("blacklist").delete().eq("id", target['id']).execute()
-                                    st.warning("🗑️ Deleted successfully!")
-                                    st.rerun()
-                                except Exception as e:
-                                    st.error(f"Delete Error: {e}")
+                with b_col2:
+                    if st.button("🗑️ Delete Record", type="primary", use_container_width=True):
+                        try:
+                            supabase.table("blacklist").delete().eq("id", target['id']).execute()
+                            st.warning("🗑️ Deleted successfully!")
+                            st.rerun()
+                        except Exception as e:
+                            st.error(f"Delete Error: {e}")
 else:
                 st.info("No matching records found. (ရိုက်ထည့်ထားသော စာလုံးပေါင်း မှန်မမှန် ပြန်စစ်ပေးပါ)")
         except Exception as e:
