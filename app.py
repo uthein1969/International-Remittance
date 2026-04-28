@@ -258,8 +258,8 @@ with st.expander("➕ Add New Blacklist Record", expanded=True):
     # ၁။ Search Input (အမည် သို့မဟုတ် NRC ဖြင့် ရှာရန်)
 search_query = st.text_input("Search by Name or NRC", placeholder="ဥပမာ- 13/nakhana")
 
-    if search_query:
-        try:
+            if search_query:
+            try:
             # ilike ကိုသုံးပြီး ရှာဖွေခြင်း (စာလုံးအကြီးအသေး မရွေးပါ)
             # အမည် သို့မဟုတ် မှတ်ပုံတင်နံပါတ်ထဲမှာ search_query ပါဝင်တာနဲ့ ဆွဲထုတ်ပါမယ်
             search_res = supabase.table("blacklist").select("*").or_(f"name.ilike.%{search_query}%,nrcno.ilike.%{search_query}%").execute()
