@@ -299,11 +299,11 @@ elif page == "🏦 Inward Transaction":
         # ၁။ နောက်ဆုံး Transaction No ကို Database မှ ဆွဲထုတ်ခြင်း
     try:
         last_trans = supabase.table("inward_transactions").select("transaction_no").order("created_at", desc=True).limit(1).execute()
-            if last_trans.data:
-                last_no = int(last_trans.data[0]['transaction_no'])
-                new_no = f"{last_no + 1:04d}"
-            else:
-                new_no = "0001"
+        if last_trans.data:
+            last_no = int(last_trans.data[0]['transaction_no'])
+            new_no = f"{last_no + 1:04d}"
+        else:
+            new_no = "0001"
     except Exception:
             new_no = "0001"
 
