@@ -179,7 +179,7 @@ if page == "🔍 Search Transactions":
         st.error(f"Search Error: {e}")
 
 # --- ၆။ Blacklist System Page ---
-    elif page == "📋 Blacklist Info":
+elif page == "📋 Blacklist Info":
     st.title("📋 Blacklist Management")
     
     # ၁။ NRC Data ကို ဆွဲထုတ်ခြင်း
