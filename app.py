@@ -265,8 +265,8 @@ elif page == "📋 Blacklist Info":
                     if st.button("🗑️ Delete Permanently", type="primary", use_container_width=True):
                         supabase.table("blacklist").delete().eq("id", target['id']).execute()
                         st.warning("Deleted!")
-                        st.rerun()                        
-    st.info("No records found in Blacklist.")
+                        st.rerun()    
+                        st.info("No records found in Blacklist.")
 # --- ၇။ Inward Transaction Page ---
 elif page == "🏦 Inward Transaction":
     st.title("🏦 Inward Transaction")
