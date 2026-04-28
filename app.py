@@ -183,12 +183,13 @@ elif page == "📋 Blacklist Info":
     st.title("📋 Blacklist Management")
     
     # ၁။ NRC Data အားလုံးကို DataFrame ထဲသို့ ဆွဲထုတ်ခြင်း
+    # ၁။ Database မှ ဒေတာများကို သန့်စင်စွာ ဆွဲထုတ်ခြင်း
     try:
         nrc_res = supabase.table("myanmar_nrc_data").select("state_no, short_en").execute()
         nrc_df = pd.DataFrame(nrc_res.data) if nrc_res.data else pd.DataFrame(columns=["state_no", "short_en"])
         
         if not nrc_df.empty:
-            # text type ဖြစ်နေသဖြင့် string ပြောင်းပြီး အရှေ့အနောက်က space များကို ဖြတ်ပါသည်
+            # အရှေ့အနောက် ဟာကွက်များ (Spaces) ကို အကုန်ဖယ်ပြီး String အဖြစ် သိမ်းပါသည်
             nrc_df['state_no'] = nrc_df['state_no'].astype(str).str.strip()
             nrc_df['short_en'] = nrc_df['short_en'].astype(str).str.strip()
     except Exception as e:
@@ -199,21 +200,26 @@ elif page == "📋 Blacklist Info":
     with st.expander("➕ Add New Blacklist Record", expanded=True):
         with st.form("add_blacklist_form"):
             name = st.text_input("Full Name (အမည်)")
-            
             st.write("🆔 NRC Number (New Format)")
             c1, c2, c3, c4 = st.columns([1, 1.5, 1, 2])
             
             with c1:
-                # ရရှိလာသော State List ထဲက Space များကို ရှင်းပြီးမှ ထုတ်ပြပါသည်
-                all_states = sorted(list(set(nrc_df['state_no'].tolist())), key=lambda x: int(x) if x.isdigit() else 0)
-                selected_state = st.selectbox("State No", all_states if all_states else ["1"])
+                # State List ကို Unique ဖြစ်အောင်လုပ်ပြီး စီပါသည်
+                state_list = sorted(list(set(nrc_df['state_no'].unique().tolist())), key=lambda x: int(x) if x.isdigit() else 0)
+                # key="state_selector" ထည့်ပေးခြင်းဖြင့် State ရွေးချယ်မှုတိုင်းကို မှတ်သားထားစေပါသည်
+                chosen_state = st.selectbox("State No", state_list if state_list else ["1"], key="state_selector")
             
             with c2:
-                # ရွေးချယ်လိုက်သော State ကိုလည်း strip() လုပ်ပြီးမှ Filter စစ်ပါသည်
-                filtered_tsps = nrc_df[nrc_df['state_no'] == str(selected_state).strip()]
-                tsps = sorted(filtered_tsps['short_en'].unique().tolist())
+                # Filter Logic ကို သေသေချာချာ စစ်ဆေးပါသည်
+                if not nrc_df.empty:
+                    # User ရွေးလိုက်သော chosen_state နှင့် ကိုက်ညီသော Township များကိုသာ ယူပါသည်
+                    current_tsps = nrc_df[nrc_df['state_no'] == str(chosen_state)]['short_en'].unique().tolist()
+                    tsps = sorted(current_tsps)
+                else:
+                    tsps = []
                 
-                selected_tsp = st.selectbox("Township", tsps if tsps else ["No Data"])        
+                chosen_tsp = st.selectbox("Township", tsps if tsps else ["No Data"], key="tsp_selector")
+            
             with c3:
                 nrc_type = st.selectbox("Type", ["(N)", "(E)", "(P)", "(A)"])
             with c4:
@@ -223,16 +229,14 @@ elif page == "📋 Blacklist Info":
             submit_bl = st.form_submit_button("Add to Blacklist", type="primary", use_container_width=True)
 
             if submit_bl:
-                if name and nrc_num and selected_tsp != "No Data Found":
-                    full_nrc = f"{selected_state}/{selected_tsp}{nrc_type}{nrc_num}"
+                if name and nrc_num and chosen_tsp != "No Data":
+                    full_nrc = f"{chosen_state}/{chosen_tsp}{nrc_type}{nrc_num}"
                     try:
                         supabase.table("blacklist").insert({"name": name, "nrcno": full_nrc, "reason": reason}).execute()
                         st.success(f"✅ {full_nrc} ကို သိမ်းဆည်းပြီးပါပြီ။")
                         st.rerun()
                     except Exception as e:
-                        st.error(f"Save Error: {e}")
-                else:
-                    st.warning("⚠️ အချက်အလက်များ ပြည့်စုံအောင် ဖြည့်ပါ။")
+                        st.error(f"Save Error: {e}")    
     # --- EDIT OR DELETE SECTION (UI အသစ်ဖြင့် ပြင်ဆင်ထားပါသည်) ---
     st.subheader("🛠️ Edit or Delete Record")
     
