@@ -288,16 +288,16 @@ if search_query:
                         try:
                 # ဤစာကြောင်းများအားလုံး try: အောက်တွင် တစ်ဆင့်ဝင်နေရပါမည်
                             supabase.table("blacklist").update({
-                            "name": u_name,
-                            "nrcno": u_nrc,
-                            "remark": u_reason
-                        }).eq("id", target['id']).execute()
+                                "name": u_name,
+                                "nrcno": u_nrc,
+                                "remark": u_reason
+                            }).eq("id", target['id']).execute()
                 
             # အောက်ပါ စာကြောင်း ၂ ကြောင်းကို အထဲသို့ တစ်ဆင့် တိုးပေးပါ
-                        st.success("✅ Updated successfully!")
-                        st.rerun()
+                            st.success("✅ Updated successfully!")
+                            st.rerun()
                 
-                    except Exception as e:
+                        except Exception as e:
                         st.error(f"Update Error: {e}")
                                     
                 with b_col2:
