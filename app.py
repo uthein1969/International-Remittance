@@ -300,8 +300,8 @@ elif page == "🏦 Inward Transaction":
         except Exception:
             new_no = "0001"
 
-    # --- Header Information ---
-    h_col1, h_col2, h_col3 = st.columns(3)
+# --- Header Information ---
+h_col1, h_col2, h_col3 = st.columns(3)
     with h_col1:
         st.text_input("Date:", value=now_yangon.strftime("%Y-%m-%d %H:%M:%S"), disabled=True)
     with h_col2:
@@ -310,8 +310,8 @@ elif page == "🏦 Inward Transaction":
     with h_col3:
         trans_no = st.text_input("Transaction No:", value=new_no)
 
-    # --- ၂။ RECEIVER INFORMATION ---
-    st.subheader("🔵 RECEIVER INFORMATION :")
+# --- ၂။ RECEIVER INFORMATION ---
+st.subheader("🔵 RECEIVER INFORMATION :")
     with st.container(border=True):
         r_col1, r_col2 = st.columns(2)
         r_name = r_col1.text_input("Receiver Name:")
@@ -327,8 +327,8 @@ elif page == "🏦 Inward Transaction":
         r_point = r_point_col.text_input("Withdraw Point:")
         r_remark = st.text_area("Remark for Withdraw Point:")
 
-    # --- ၃။ SENDER INFORMATION ---
-    st.subheader("🔵 SENDER INFORMATION :")
+# --- ၃။ SENDER INFORMATION ---
+st.subheader("🔵 SENDER INFORMATION :")
     with st.container(border=True):
         s_name_col, s_id_col, s_country_col = st.columns([2, 2, 1])
         s_name = s_name_col.text_input("Sender Name:")
@@ -349,8 +349,8 @@ elif page == "🏦 Inward Transaction":
         calc_total_mmk = (amount * mmk_rate) + mmk_allowance
         st.markdown(f"### Total MMK: **{calc_total_mmk:,.2f}**")
 
-    # --- ၄။ SAVE ACTION ---
-    # မှတ်ချက် - ဒီ button သည် elif page == "🏦 Inward Transaction": ရဲ့ အောက်မှာ Space ခြားပြီး ရှိနေရပါမယ်
+# --- ၄။ SAVE ACTION ---
+# မှတ်ချက် - ဒီ button သည် elif page == "🏦 Inward Transaction": ရဲ့ အောက်မှာ Space ခြားပြီး ရှိနေရပါမယ်
     if st.button("💾 Save Inward Transaction", type="primary", use_container_width=True):
         if r_name and r_nrc:
             try:
