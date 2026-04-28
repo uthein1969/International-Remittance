@@ -283,7 +283,7 @@ if search_query:
                     u_reason = st.text_area("Edit Reason", value=target.get('remark', '') or "", height=115)
                         
                     b_col1, b_col2 = st.columns(2)
-with b_col1:
+        with b_col1:
             if st.button("🔄 Update Record", type="secondary", use_container_width=True):
                 try:
                     supabase.table("blacklist").update({
