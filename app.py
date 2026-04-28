@@ -229,8 +229,15 @@ elif page == "📋 Blacklist Info":
                     except Exception as e:
                         st.error(f"Error saving to Blacklist: {e}")
                 else:
-                    st.warning("⚠️ အချက်အလက်များ ပြည့်စုံအောင် ဖြည့်စွက်ပါ။")        # ၂။ Edit & Delete ပြုလုပ်သည့်အပိုင်း
-        with col_mod:
+                    st.warning("⚠️ အချက်အလက်များ ပြည့်စုံအောင် ဖြည့်စွက်ပါ။")        
+        # ၂။ Edit & Delete ပြုလုပ်သည့်အပိုင်း
+        # Column တွေကို အရင် Define လုပ်ပေးရပါမယ်
+        # ဥပမာ - Column ၂ ခု ခွဲချင်တယ်ဆိုရင်:
+            col_list, col_mod = st.columns([2, 1]) 
+
+with col_mod:
+    # ဒီနေရာမှာ သင့်ရဲ့ ခလုတ်တွေ ဒါမှမဟုတ် Input field တွေ ဆက်ရေးနိုင်ပါတယ်
+    st.write("Modification Area")
             st.subheader("🛠️ Edit or Delete")
             # Database ထဲမှ data များအားလုံးကို ဆွဲထုတ်ခြင်း
             res_all = supabase.table("blacklist").select("*").execute()
