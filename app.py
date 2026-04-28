@@ -237,6 +237,7 @@ elif page == "📋 Blacklist Info":
                         st.rerun()
                     except Exception as e:
                         st.error(f"Save Error: {e}")    
+    
     # --- EDIT OR DELETE SECTION (UI အသစ်ဖြင့် ပြင်ဆင်ထားပါသည်) ---
     st.subheader("🛠️ Edit or Delete Record")
     
