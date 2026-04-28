@@ -220,15 +220,18 @@ elif page == "📋 Blacklist Info":
         reason = st.text_area("Reason for Blacklisting")
         
         # သိမ်းဆည်းရန် ခလုတ်
-        if st.button("Add to Blacklist", type="primary", use_container_width=True):
-            if name and nrc_num and selected_tsp != "No Data":
-                full_nrc = f"{selected_state}/{selected_tsp}{nrc_type}{nrc_num}"
-                try:
-                    supabase.table("blacklist").insert({"name": name, "nrcno": full_nrc, "remark": remark}).execute()
-                    st.success("✅ သိမ်းဆည်းပြီးပါပြီ။")
-                    st.rerun()
-                except Exception as e:
-                    st.error(f"Save Error: {e}")
+        if st.button("Add to Blacklist"):
+    if name and nrc_num:
+        full_nrc = f"{selected_state}/{selected_tsp}{nrc_type}{nrc_num}"
+        try:
+            supabase.table("blacklist").insert({
+                "name": name, 
+                "nrcno": full_nrc, 
+                "remark": reason  
+            }).execute()
+            st.success("Saved!")
+        except Exception as e:
+            st.error(f"Save Error: {e}")
     st.subheader("🛠️ Search & Edit/Delete Blacklist")
 
     # ၁။ Search Input (အမည် သို့မဟုတ် NRC ဖြင့် ရှာရန်)
@@ -257,14 +260,16 @@ elif page == "📋 Blacklist Info":
                             u_name = st.text_input("Edit Name", value=target.get('name', ''))
                             u_nrc = st.text_input("Edit NRC", value=target.get('nrcno', ''))
                         with col_e2:
-                            u_reason = st.text_area("Edit Remark", value=target.get('remark', '') or "", height=115)
+                            u_reason = st.text_area("Edit Reason", value=target.get('remark', '') or "")
                         
                         b_col1, b_col2 = st.columns(2)
                         with b_col1:
-                            if st.button("🔄 Update Record", type="secondary", use_container_width=True):
-                                supabase.table("blacklist").update({
-                                    "name": u_name, "nrcno": u_nrc, "reason": u_reason
-                                }).eq("id", target['id']).execute()
+                            if st.button("🔄 Update Record"):
+                        supabase.table("blacklist").update({
+                            "name": u_name, 
+                            "nrcno": u_nrc, 
+                            "remark": u_reason
+                        }).eq("id", target['id']).execute()
                                 st.success("Updated successfully!")
                                 st.rerun()
                         with b_col2:
