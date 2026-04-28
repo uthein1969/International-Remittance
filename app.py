@@ -189,17 +189,31 @@ elif page == "📋 Blacklist Info":
             st.write("🆔 NRC Number (New Format)")
             c1, c2, c3, c4 = st.columns([1, 1.5, 1, 2])
             
+            # ၁။ State Number ဆွဲထုတ်ခြင်း
+            state_data = supabase.table("myanmar_nrc_data").select("state_no").execute()
+            if state_data.data:
+                # ဒေတာတွေကို list လုပ်ပြီး အစဉ်လိုက်စီပါမည်
+                all_states = sorted(list(set([str(r['state_no']) for r in state_data.data])))
+            else:
+                all_states = ["12"] # ဒေတာမရှိပါက Default 12 ထားပါမည်
+
             with c1:
-                # State No (e.g., 12, 13)
-                state_query = supabase.table("myanmar_nrc_data").select("state_no").execute()
-                all_states = sorted(list(set([str(r['state_no']) for r in state_query.data]))) if state_query.data else ["12"]
                 selected_state = st.selectbox("State No", all_states)
             
             with c2:
-                # ရွေးချယ်ထားသော State အလိုက် Township (e.g., DAGAMA)
-                township_query = supabase.table("myanmar_nrc_data").select("short_en").eq("state_no", int(selected_state)).execute()
-                all_townships = sorted(list(set([r['short_en'] for r in township_query.data]))) if township_query.data else []
-                selected_tsp = st.selectbox("Township", all_townships)
+                # ၂။ ရွေးထားသော State အလိုက် Township ဆွဲထုတ်ခြင်း (အရေးကြီးသော အပိုင်း)
+                # ဒေတာရှာမတွေ့ပါက Empty list ဖြစ်မနေစေရန် try-except သုံးပါမည်
+                try:
+                    tsp_data = supabase.table("myanmar_nrc_data") \
+                        .select("short_en") \
+                        .eq("state_no", int(selected_state)) \
+                        .execute()
+                    
+                    all_townships = sorted(list(set([r['short_en'] for r in tsp_data.data]))) if tsp_data.data else []
+                except:
+                    all_townships = []
+                
+                selected_tsp = st.selectbox("Township", all_townships if all_townships else ["Loading..."])
             
             with c3:
                 nrc_type = st.selectbox("Type", ["(N)", "(E)", "(P)", "(A)"])
@@ -211,25 +225,17 @@ elif page == "📋 Blacklist Info":
             submit_bl = st.form_submit_button("Add to Blacklist", type="primary", use_container_width=True)
 
             if submit_bl:
-                if name and nrc_number and selected_tsp:
-                    # NRC ကို Format ပေါင်းလိုက်ခြင်း
+                if name and nrc_number and selected_tsp != "Loading...":
                     full_nrc = f"{selected_state}/{selected_tsp}{nrc_type}{nrc_number}"
-                    
                     try:
-                        bl_data = {
-                            "name": name,
-                            "nrcno": full_nrc,
-                            "reason": reason,
-                            "created_at": datetime.now().isoformat()
-                        }
-                        # database ထဲသို့ ထည့်သွင်းခြင်း
+                        bl_data = {"name": name, "nrcno": full_nrc, "reason": reason}
                         supabase.table("blacklist").insert(bl_data).execute()
-                        st.success(f"✅ {full_nrc} ကို Blacklist ထဲသို့ ထည့်သွင်းပြီးပါပြီ။")
+                        st.success(f"✅ {full_nrc} ကို သိမ်းဆည်းပြီးပါပြီ။")
                         st.rerun()
                     except Exception as e:
-                        st.error(f"Error saving to Blacklist: {e}")
+                        st.error(f"Save Error: {e}")
                 else:
-                    st.warning("⚠️ အချက်အလက်များ ပြည့်စုံအောင် ဖြည့်စွက်ပါ။")        
+                    st.warning("⚠️ အချက်အလက်များ ပြည့်စုံအောင် ဖြည့်ပါ။")        
         # ၂။ Edit & Delete ပြုလုပ်သည့်အပိုင်း
         # Column တွေကို အရင် Define လုပ်ပေးရပါမယ်
         col_list, col_mod = st.columns([2, 1]) 
