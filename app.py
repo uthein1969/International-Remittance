@@ -314,65 +314,60 @@ elif page == "🏦 Inward Transaction":
             mmk_rate = st.number_input("MMK Rate", min_value=0.0, format="%.2f")
             mmk_allowance = st.number_input("MMK Allowance", min_value=0.0, format="%.2f")
         with s_usd_col:
-            usd_equiv = st.number_input("USD Equivalent", min_value=0.0)
-    # ဤနေရာတွင် နာမည်ကို 'total_mmk' ဟု တိတိကျကျ ပေးပါ
-            total_mmk = st.number_input("Total MMK", min_value=0.0)
-        
-        # --- ဒီနေရာကို Column တွေရဲ့ အပြင်ဘက် (Indent အပြင်) ကို ထုတ်ရေးပါ ---
+        usd_equiv = st.number_input("USD Equivalent", min_value=0.0)
+        # တွက်ချက်ရရှိတဲ့ total ကို variable တစ်ခုထဲ သိမ်းထားပါမယ်
         calc_total_mmk = (amount * mmk_rate) + mmk_allowance
         st.markdown(f"### Total MMK: **{calc_total_mmk:,.2f}**")
 
-    # --- ၄။ SAVE ACTION (Indent ထဲသို့ ထည့်သွင်းထားသည်) ---
-    # --- Save Action with Blacklist Check ---
-if st.button("💾 Save Inward Transaction", type="primary", use_container_width=True):
-    # 1. Validation Check
-    if not r_name or not r_nrc:
-        st.warning("⚠️ Receiver Name နှင့် NRC ကို ဖြည့်စွက်ပါ။")
-    else:
-        try:
-            # 2. Blacklist Check
-            check_bl = supabase.table("blacklist").select("name").eq("nrcno", r_nrc).execute()
-            
-            if len(check_bl.data) > 0:
-                st.error(f"❌ Blacklisted User: {check_bl.data[0]['name']}")
-            else:
-                # 3. Data Preparation
-                # Ensure numbers are actual floats for the 'numeric' columns in SQL
-                new_data = {
-                    "branch": branch,
-                    "transaction_no": trans_no,
-                    "r_name": r_name,
-                    "r_nrc": r_nrc,
-                    "r_address": r_address,
-                    "r_phone": r_phone,
-                    "r_purpose": r_purpose,
-                    "r_state": r_state,
-                    "r_withdraw_point": r_point,
-                    "r_remark": r_remark,
-                    "s_name": s_name,
-                    "s_id": s_id,
-                    "s_country": s_country,
-                    "currency": currency,
-                    "amount": float(amount),
-                    "mmk_rate": float(mmk_rate),
-                    "mmk_allowance": float(mmk_allowance),
-                    "usd_equiv": float(usd_equiv) if usd_equiv else 0,
-                    "total_mmk": float(total_mmk) if total_mmk else 0 # ဒီနေရာမှာ total_mmk variable ရှိနေရပါမယ်
-                }
-
-                # 4. Database Insert
-                response = supabase.table("inward_transactions").insert(new_data).execute()
+    # --- ၄။ SAVE ACTION ---
+    # မှတ်ချက် - ဒီ button သည် elif page == "🏦 Inward Transaction": ရဲ့ အောက်မှာ Space ခြားပြီး ရှိနေရပါမယ်
+    if st.button("💾 Save Inward Transaction", type="primary", use_container_width=True):
+        if r_name and r_nrc:
+            try:
+                # Blacklist Check
+                check_bl = supabase.table("blacklist").select("name").eq("nrcno", r_nrc).execute()
                 
-                if response.data:
-                    st.success("✅ ဒေတာကို အောင်မြင်စွာ သိမ်းဆည်းပြီးပါပြီ။")
-                    st.balloons()
-                    import time
-                    time.sleep(1.5)
-                    st.rerun()
+                if len(check_bl.data) > 0:
+                    st.error(f"❌ Blacklisted User: {check_bl.data[0]['name']}")
+                else:
+                    # Data Preparation
+                    new_data = {
+                        "branch": branch,
+                        "transaction_no": trans_no,
+                        "r_name": r_name,
+                        "r_nrc": r_nrc,
+                        "r_address": r_address,
+                        "r_phone": r_phone,
+                        "r_purpose": r_purpose,
+                        "r_state": r_state,
+                        "r_withdraw_point": r_point,
+                        "r_remark": r_remark,
+                        "s_name": s_name,
+                        "s_id": s_id,
+                        "s_country": s_country,
+                        "currency": currency,
+                        "amount": float(amount),
+                        "mmk_rate": float(mmk_rate),
+                        "mmk_allowance": float(mmk_allowance),
+                        "usd_equiv": float(usd_equiv) if usd_equiv else 0,
+                        # အပေါ်မှာ တွက်ထားတဲ့ calc_total_mmk ကို တိုက်ရိုက်သိမ်းပါမယ်
+                        "total_mmk": float(calc_total_mmk) 
+                    }
 
-        except Exception as e:
-            # Catching the specific RLS or Data Type errors
-            st.error(f"Database Error: {e}")            
+                    # Database Insert
+                    response = supabase.table("inward_transactions").insert(new_data).execute()
+                    
+                    if response.data:
+                        st.success("✅ ဒေတာကို အောင်မြင်စွာ သိမ်းဆည်းပြီးပါပြီ။")
+                        st.balloons()
+                        import time
+                        time.sleep(1.5)
+                        st.rerun()
+
+            except Exception as e:
+                st.error(f"Database Error: {e}")
+        else:
+            st.warning("⚠️ Receiver Name နှင့် NRC ကို ဖြည့်စွက်ပါ။")            
             # --- ၂။ System Control Logic ---
 if page == "⚙️ System Control":
     st.title("⚙️ System Control & Setup")
