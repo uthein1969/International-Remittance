@@ -180,22 +180,25 @@ if page == "🔍 Search Transactions":
 
 # --- ၆။ Blacklist System Page ---
 elif page == "📋 Blacklist Info":
-    st.title("📋 Blacklist Management")
+    st.title("📋 Blacklist Management System")
     
-    # ၁။ NRC Data ကို Load လုပ်ခြင်း
+    # ၁။ NRC Data Load လုပ်ခြင်း (Error handling အပြည့်အစုံဖြင့်)
     try:
         nrc_res = supabase.table("myanmar_nrc_data").select("state_no, short_en").execute()
-        nrc_df = pd.DataFrame(nrc_res.data) if nrc_res.data else pd.DataFrame(columns=["state_no", "short_en"])
+        if nrc_res.data:
+            nrc_df = pd.DataFrame(nrc_res.data)
+        else:
+            nrc_df = pd.DataFrame(columns=["state_no", "short_en"])
     except Exception as e:
-        st.error(f"NRC Data Load Error: {e}")
+        st.error(f"Error loading NRC data: {e}")
         nrc_df = pd.DataFrame(columns=["state_no", "short_en"])
 
-    # ၂။ Form Clear ဖြစ်စေရန် Session State သတ်မှတ်ခြင်း
+    # ၂။ Form Clear ဖြစ်စေရန် Session State များ သတ်မှတ်ခြင်း
     if 'bl_name' not in st.session_state: st.session_state.bl_name = ""
     if 'bl_nrc_num' not in st.session_state: st.session_state.bl_nrc_num = ""
     if 'bl_remark' not in st.session_state: st.session_state.bl_remark = ""
 
-    # --- ADD NEW SECTION ---
+    # --- အပိုင်း (က) အသစ်ထည့်သွင်းခြင်း (Add New Record) ---
     with st.expander("➕ Add New Blacklist Record", expanded=True):
         name = st.text_input("Full Name (အမည်)", key="bl_name")
         
@@ -206,8 +209,8 @@ elif page == "📋 Blacklist Info":
             all_states = sorted(nrc_df['state_no'].unique().tolist(), key=lambda x: int(x) if str(x).isdigit() else 99)
             selected_state = st.selectbox("State No", all_states, key="st_sel")
         with c2:
-            filtered_tsps = nrc_df[nrc_df['state_no'] == selected_state]['short_en'].unique().tolist()
-            selected_tsp = st.selectbox("Township", sorted(filtered_tsps) if filtered_tsps else ["No Data"], key="tsp_sel")
+            tsps = nrc_df[nrc_df['state_no'] == selected_state]['short_en'].unique().tolist()
+            selected_tsp = st.selectbox("Township", sorted(tsps) if tsps else ["No Data"], key="tsp_sel")
         with c3:
             nrc_type = st.selectbox("Type", ["(N)", "(E)", "(P)", "(A)"], key="type_sel")
         with c4:
@@ -219,16 +222,16 @@ elif page == "📋 Blacklist Info":
             if name and nrc_num and selected_tsp != "No Data":
                 full_nrc = f"{selected_state}/{selected_tsp}{nrc_type}{nrc_num}"
                 try:
-                    # Duplicate Check
-                    check_exists = supabase.table("blacklist").select("nrcno").eq("nrcno", full_nrc).execute()
-                    if check_exists.data:
-                        st.error(f"❌ {full_nrc} ရှိနှင့်ပြီးသားဖြစ်ပါသည်။")
+                    # Duplicate စစ်ဆေးခြင်း
+                    check = supabase.table("blacklist").select("nrcno").eq("nrcno", full_nrc).execute()
+                    if check.data:
+                        st.error(f"❌ {full_nrc} သည် Database ထဲတွင် ရှိနှင့်ပြီးသားဖြစ်ပါသည်။")
                     else:
                         supabase.table("blacklist").insert({
                             "name": name, "nrcno": full_nrc, "remark": reason_text
                         }).execute()
                         st.success("✅ Saved Successfully!")
-                        # Reset Form
+                        # Form ကို Reset လုပ်ခြင်း
                         st.session_state.bl_name = ""
                         st.session_state.bl_nrc_num = ""
                         st.session_state.bl_remark = ""
@@ -236,22 +239,23 @@ elif page == "📋 Blacklist Info":
                 except Exception as e:
                     st.error(f"Save Error: {e}")
             else:
-                st.warning("အချက်အလက် ပြည့်စုံစွာ ဖြည့်ပါ။")
+                st.warning("⚠️ ကျေးဇူးပြု၍ အချက်အလက်များ ပြည့်စုံစွာ ဖြည့်စွက်ပေးပါ။")
 
     st.divider()
 
-    # --- SEARCH & EDIT/DELETE SECTION ---
-    st.subheader("🔍 Search & Edit/Delete")
+    # --- အပိုင်း (ခ) ရှာဖွေခြင်းနှင့် ပြင်ဆင်/ဖျက်သိမ်းခြင်း (Search & Edit/Delete) ---
+    st.subheader("🔍 Search & Edit/Delete Blacklist")
     search_query = st.text_input("Search by Name or NRC", placeholder="ဥပမာ- nakhana သို့မဟုတ် အမည်")
 
     if search_query:
         try:
-            search_res = supabase.table("blacklist").select("*").or_(f"name.ilike.%{search_query}%,nrcno.ilike.%{search_query}%").execute()
+            # ilike ကိုသုံးပြီး အမည် သို့မဟုတ် မှတ်ပုံတင်အစိတ်အပိုင်းဖြင့် ရှာဖွေခြင်း
+            res = supabase.table("blacklist").select("*").or_(f"name.ilike.%{search_query}%,nrcno.ilike.%{search_query}%").execute()
             
-            if search_res.data:
-                st.success(f"Found {len(search_res.data)} records.")
-                options = {f"{r['name']} ({r['nrcno']})": r for r in search_res.data}
-                selected_key = st.selectbox("Select Record to modify", list(options.keys()))
+            if res.data:
+                st.success(f"တွေ့ရှိမှု အရေအတွက် - {len(res.data)} ခု")
+                options = {f"{r['name']} ({r['nrcno']})": r for r in res.data}
+                selected_key = st.selectbox("ပြင်ဆင်ရန် Record ကို ရွေးချယ်ပါ", list(options.keys()))
                 
                 if selected_key:
                     target = options[selected_key]
@@ -283,11 +287,13 @@ elif page == "📋 Blacklist Info":
                                 except Exception as e:
                                     st.error(f"Delete Error: {e}")
             else:
-                st.info("No matching records found.")
+                st.info("🔍 ရှာဖွေမှုရလဒ် မရှိပါ။")
         except Exception as e:
             st.error(f"Search Error: {e}")
     else:
-        st.info("ရှာဖွေရန် အမည် သို့မဟုတ် မှတ်ပုံတင်အစိတ်အပိုင်းတစ်ခုခု ရိုက်ထည့်ပါ။")    # --- ၇။ Inward Transaction Page ---
+        st.info("💡 ရှာဖွေရန် အမည် သို့မဟုတ် မှတ်ပုံတင်အစိတ်အပိုင်းတစ်ခုခုကို ရိုက်ထည့်ပါ။")    
+
+# --- ၇။ Inward Transaction Page ---
 elif page == "🏦 Inward Transaction":
         # ၁။ နောက်ဆုံး Transaction No ကို Database မှ ဆွဲထုတ်ခြင်း
         try:
