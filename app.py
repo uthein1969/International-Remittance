@@ -264,10 +264,10 @@ if search_query:
         # အမည် သို့မဟုတ် မှတ်ပုံတင်နံပါတ်ထဲမှာ search_query ပါဝင်တာနဲ့ ဆွဲထုတ်ပါမယ်
         search_res = supabase.table("blacklist").select("*").or_(f"name.ilike.%{search_query}%,nrcno.ilike.%{search_query}%").execute()
             
-            if search_res.data:
-                st.success(f"Found {len(search_res.data)} matching records.")
-                search_options = {f"{r['name']} ({r['nrcno']})": r for r in search_res.data}
-                selected_key = st.selectbox("Select precise record to modify", list(search_options.keys()))
+        if search_res.data:
+            st.success(f"Found {len(search_res.data)} matching records.")
+            search_options = {f"{r['name']} ({r['nrcno']})": r for r in search_res.data}
+            selected_key = st.selectbox("Select precise record to modify", list(search_options.keys()))
                 
                 if selected_key:
                     target = search_options[selected_key]
