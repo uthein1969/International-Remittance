@@ -182,19 +182,17 @@ if page == "🔍 Search Transactions":
 elif page == "📋 Blacklist Info":
     st.title("📋 Blacklist Management")
     
-    # ၁။ NRC Data အားလုံးကို DataFrame ထဲသို့ ဆွဲထုတ်ခြင်း
-    # ၁။ Database မှ ဒေတာများကို သန့်စင်စွာ ဆွဲထုတ်ခြင်း
-    try:
-        nrc_res = supabase.table("myanmar_nrc_data").select("state_no, short_en").execute()
-        nrc_df = pd.DataFrame(nrc_res.data) if nrc_res.data else pd.DataFrame(columns=["state_no", "short_en"])
-        
-        if not nrc_df.empty:
-            # အရှေ့အနောက် ဟာကွက်များ (Spaces) ကို အကုန်ဖယ်ပြီး String အဖြစ် သိမ်းပါသည်
-            nrc_df['state_no'] = nrc_df['state_no'].astype(str).str.strip()
-            nrc_df['short_en'] = nrc_df['short_en'].astype(str).str.strip()
-    except Exception as e:
-        st.error(f"Error: {e}")
-        nrc_df = pd.DataFrame(columns=["state_no", "short_en"])
+    # ၁။ NRC Data ဆွဲထုတ်ခြင်း
+    nrc_res = supabase.table("myanmar_nrc_data").select("state_no, short_en").execute()
+    nrc_df = pd.DataFrame(nrc_res.data) if nrc_res.data else pd.DataFrame()
+
+    # --- ဒီစာကြောင်းလေးတွေက ဘာမှားနေလဲဆိုတာ ပြောပြပါလိမ့်မယ် ---
+    if nrc_df.empty:
+        st.error("❌ Database ထဲကနေ NRC Data လုံးဝ ဆွဲထုတ်လို့ မရပါဘူး (Table ထဲမှာ data မရှိတာ ဒါမှမဟုတ် Permission လိုနေတာ ဖြစ်နိုင်ပါတယ်)")
+    else:
+        st.info(f"✅ ဒေတာ {len(nrc_df)} ခု ရှာတွေ့ပါတယ်။")
+        # Column နာမည်တွေ မှန်မမှန် စစ်ဆေးရန်
+        st.write("Column names in DB:", list(nrc_df.columns))
 
     # --- ADD NEW SECTION ---
     with st.expander("➕ Add New Blacklist Record", expanded=True):
@@ -205,20 +203,20 @@ elif page == "📋 Blacklist Info":
             
             with c1:
                 # State List ကို Unique ဖြစ်အောင်လုပ်ပြီး စီပါသည်
-                state_list = sorted(list(set(nrc_df['state_no'].unique().tolist())), key=lambda x: int(x) if x.isdigit() else 0)
-                # key="state_selector" ထည့်ပေးခြင်းဖြင့် State ရွေးချယ်မှုတိုင်းကို မှတ်သားထားစေပါသည်
-                chosen_state = st.selectbox("State No", state_list if state_list else ["1"], key="state_selector")
+                state_list = sorted(nrc_df['state_no'].unique().astype(str).tolist()) if not nrc_df.empty else ["1"]
+            sel_state = st.selectbox("State No", state_list)
             
             with c2:
                 # Filter Logic ကို သေသေချာချာ စစ်ဆေးပါသည်
                 if not nrc_df.empty:
-                    # User ရွေးလိုက်သော chosen_state နှင့် ကိုက်ညီသော Township များကိုသာ ယူပါသည်
-                    current_tsps = nrc_df[nrc_df['state_no'] == str(chosen_state)]['short_en'].unique().tolist()
-                    tsps = sorted(current_tsps)
-                else:
-                    tsps = []
+                # database ထဲက data နဲ့ user ရွေးတာ တူအောင် strip လုပ်ပါသည်
+                match_tsps = nrc_df[nrc_df['state_no'].astype(str).str.strip() == str(sel_state).strip()]
+                tsp_options = sorted(match_tsps['short_en'].unique().tolist())
+            else:
+                tsp_options = []
                 
-                chosen_tsp = st.selectbox("Township", tsps if tsps else ["No Data"], key="tsp_selector")
+                st.selectbox("Township", tsp_options if tsp_options else ["No Options Found"])
+            st.form_submit_button("Submit")
             
             with c3:
                 nrc_type = st.selectbox("Type", ["(N)", "(E)", "(P)", "(A)"])
