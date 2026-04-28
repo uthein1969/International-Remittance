@@ -222,18 +222,20 @@ elif page == "📋 Blacklist Info":
         # သိမ်းဆည်းရန် ခလုတ်
       
 if st.button("Add to Blacklist", type="primary", use_container_width=True):
-    if name and nrc_num: # Space ၄ ချက်
-        full_nrc = f"{selected_state}/{selected_tsp}{nrc_type}{nrc_num}" # Space ၈ ချက်
-        try: # Space ၈ ချက် (ဒီနေရာမှာ အပိုမပါပါစေနဲ့)
-            supabase.table("blacklist").insert({ # Space ၁၂ ချက်
-                "name": name,
-                "nrcno": full_nrc,
-                "remark": reason
+    if name and nrc_num:
+        full_nrc = f"{selected_state}/{selected_tsp}{nrc_type}{nrc_num}"
+        try:
+            # Try အောက်မှာ Space (၄) ချက် ထပ်ခြားပါ
+            supabase.table("blacklist").insert({
+                "name": name, 
+                "nrcno": full_nrc, 
+                "remark": reason  # 'remark' ဖြစ်ရပါမယ်
             }).execute()
             st.success("✅ သိမ်းဆည်းပြီးပါပြီ။")
             st.rerun()
-        except Exception as e: # Space ၈ ချက်
-        st.error(f"Save Error: {e}")
+        except Exception as e:
+            # Except အောက်မှာလည်း Space (၄) ချက် တိတိကျကျ ခြားပေးပါ
+            st.error(f"Save Error: {e}")
     st.subheader("🛠️ Search & Edit/Delete Blacklist")
 
     # ၁။ Search Input (အမည် သို့မဟုတ် NRC ဖြင့် ရှာရန်)
