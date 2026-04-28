@@ -269,8 +269,8 @@ if search_query:
             search_options = {f"{r['name']} ({r['nrcno']})": r for r in search_res.data}
             selected_key = st.selectbox("Select precise record to modify", list(search_options.keys()))
                 
-                if selected_key:
-                    target = search_options[selected_key]
+            if selected_key:
+                target = search_options[selected_key]
                     
                     # Edit Form ကို Box လေးဖြင့် ပြသခြင်း
                     with st.container(border=True):
