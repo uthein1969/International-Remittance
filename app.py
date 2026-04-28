@@ -220,16 +220,19 @@ elif page == "📋 Blacklist Info":
         reason = st.text_area("Reason for Blacklisting")
         
         # သိမ်းဆည်းရန် ခလုတ်
-        if st.button("Add to Blacklist"):
-    if name and nrc_num:
+        if st.button("Add to Blacklist", type="primary", use_container_width=True):
+    # ဒီနေရာမှာ Space (၄) ချက် ခြားရပါမယ်
+    if name and nrc_num: 
+        # ဒီနေရာမှာ နောက်ထပ် Space (၄) ချက် (စုစုပေါင်း ၈ ချက်) ထပ်ခြားရပါမယ်
         full_nrc = f"{selected_state}/{selected_tsp}{nrc_type}{nrc_num}"
         try:
             supabase.table("blacklist").insert({
                 "name": name, 
                 "nrcno": full_nrc, 
-                "remark": reason  
+                "remark": reason # 'remark' ကို string အနေနဲ့ သုံးထားတာ သေချာပါစေ
             }).execute()
-            st.success("Saved!")
+            st.success("✅ သိမ်းဆည်းပြီးပါပြီ။")
+            st.rerun()
         except Exception as e:
             st.error(f"Save Error: {e}")
     st.subheader("🛠️ Search & Edit/Delete Blacklist")
