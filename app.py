@@ -179,84 +179,57 @@ if page == "🔍 Search Transactions":
         st.error(f"Search Error: {e}")
 
 # --- ၆။ Blacklist System Page ---
-if page == "📋 Blacklist Info":
-    st.title("🌏 Blacklist Management")
-    tab1, tab2 = st.tabs(["📊 View & Search", "⚙️ Management"])
+elif page == "📋 Blacklist Info":
+    st.title("📋 Blacklist Management")
     
-    with tab1:
-        search = st.text_input("🔍 Search Blacklist", placeholder="Enter Name or NRC...")
-        try:
-            # အစဉ်လိုက်ကြည့်ရန် desc=False
-            res = supabase.table("blacklist").select("*").order("srno", desc=False).execute()
-            if res.data:
-                df = pd.DataFrame(res.data)
-                if search:
-                    df = df[df['name'].str.contains(search, case=False) | df['nrcno'].str.contains(search, case=False)]
-                df.insert(0, 'No.', range(1, 1 + len(df)))
-                st.dataframe(df.drop(columns=['srno']), use_container_width=True)
-        except Exception as e:
-            st.error(f"Error: {e}")
-
-    with tab2:
-        col_new, col_mod = st.columns(2)
-        
-        # ၁။ Blacklist အသစ်ထည့်သည့်အပိုင်း (Dynamic NRC Format)
-        with col_new:
-            st.subheader("➕ Add New Blacklist")
+    with st.expander("➕ Add New Blacklist Record", expanded=True):
+        with st.form("add_blacklist_form"):
+            name = st.text_input("Full Name (အမည်)")
             
-            # --- NRC အတွက် လိုအပ်သော Data များကို ဆွဲထုတ်ခြင်း ---
-            try:
-                # ၁။ State Code များအားလုံးကို ဆွဲထုတ်ခြင်း
-                state_res = supabase.table("myanmar_nrc_data").select("state_no").execute()
-                all_states = sorted(list(set([str(r['state_no']) for r in state_res.data]))) if state_res.data else ["12"]
-                
-                # Form မတိုင်ခင် Selection များကို အရင်ယူထားပါမည်
-                n_c1, n_c2 = st.columns(2)
-                selected_state = n_c1.selectbox("State Code", all_states)
-                
-                # ၂။ ရွေးချယ်ထားသော State အလိုက် Township (short_en) ကို Filter လုပ်ခြင်း
-                town_res = supabase.table("myanmar_nrc_data").select("short_en").eq("state_no", int(selected_state)).execute()
-                all_towns = sorted(list(set([r['short_en'] for r in town_res.data]))) if town_res.data else []
-                selected_tsp = n_c2.selectbox("Township", all_towns)
-                
-            except Exception as e:
-                st.error(f"NRC Data Loading Error: {e}")
-                selected_state, selected_tsp = "12", "DAGAMA"
+            st.write("🆔 NRC Number (New Format)")
+            c1, c2, c3, c4 = st.columns([1, 1.5, 1, 2])
+            
+            with c1:
+                # State No (e.g., 12, 13)
+                state_query = supabase.table("myanmar_nrc_data").select("state_no").execute()
+                all_states = sorted(list(set([str(r['state_no']) for r in state_query.data]))) if state_query.data else ["12"]
+                selected_state = st.selectbox("State No", all_states)
+            
+            with c2:
+                # ရွေးချယ်ထားသော State အလိုက် Township (e.g., DAGAMA)
+                township_query = supabase.table("myanmar_nrc_data").select("short_en").eq("state_no", int(selected_state)).execute()
+                all_townships = sorted(list(set([r['short_en'] for r in township_query.data]))) if township_query.data else []
+                selected_tsp = st.selectbox("Township", all_townships)
+            
+            with c3:
+                nrc_type = st.selectbox("Type", ["(N)", "(E)", "(P)", "(A)"])
+            
+            with c4:
+                nrc_number = st.text_input("Number", max_chars=6)
 
-            # --- Form Section ---
-            with st.form("add_new_form", clear_on_submit=True):
-                name = st.text_input("Full Name")
-                
-                f_c1, f_c2 = st.columns([1, 2])
-                nrc_type = f_c1.selectbox("Type", ["(N)", "(E)", "(P)", "(A)"])
-                nrc_num = f_c2.text_input("NRC Number (6 Digits)", max_chars=6)
-                
-                remark = st.text_area("Remark / Reason")
-                
-                if st.form_submit_button("Save to Blacklist", type="primary", use_container_width=True):
-                    if name and nrc_num:
-                        # NRC ကို Format ပေါင်းခြင်း (e.g. 12/DAGAMA(N)123456)
-                        full_nrc = f"{selected_state}/{selected_tsp}{nrc_type}{nrc_num}"
-                        
-                        try:
-                            # NRC တူမတူ စစ်ဆေးခြင်း
-                            check = supabase.table("blacklist").select("nrcno").eq("nrcno", full_nrc).execute()
-                            if len(check.data) > 0:
-                                st.error(f"⚠️ {full_nrc} သည် ရှိပြီးသား ဖြစ်ပါသည်။")
-                            else:
-                                # Data သိမ်းဆည်းခြင်း
-                                supabase.table("blacklist").insert({
-                                    "name": name, 
-                                    "nrcno": full_nrc, 
-                                    "remark": remark
-                                }).execute()
-                                st.success(f"✅ {full_nrc} ကို Blacklist ထဲသို့ ထည့်သွင်းပြီးပါပြီ။")
-                                st.rerun()
-                        except Exception as e:
-                            st.error(f"Save Error: {e}")
-                    else:
-                        st.warning("⚠️ အမည်နှင့် NRC နံပါတ်ကို ပြည့်စုံစွာ ဖြည့်ပါ။")
-        # ၂။ Edit & Delete ပြုလုပ်သည့်အပိုင်း
+            reason = st.text_area("Reason for Blacklisting (အကြောင်းပြချက်)")
+            submit_bl = st.form_submit_button("Add to Blacklist", type="primary", use_container_width=True)
+
+            if submit_bl:
+                if name and nrc_number and selected_tsp:
+                    # NRC ကို Format ပေါင်းလိုက်ခြင်း
+                    full_nrc = f"{selected_state}/{selected_tsp}{nrc_type}{nrc_number}"
+                    
+                    try:
+                        bl_data = {
+                            "name": name,
+                            "nrcno": full_nrc,
+                            "reason": reason,
+                            "created_at": datetime.now().isoformat()
+                        }
+                        # database ထဲသို့ ထည့်သွင်းခြင်း
+                        supabase.table("blacklist").insert(bl_data).execute()
+                        st.success(f"✅ {full_nrc} ကို Blacklist ထဲသို့ ထည့်သွင်းပြီးပါပြီ။")
+                        st.rerun()
+                    except Exception as e:
+                        st.error(f"Error saving to Blacklist: {e}")
+                else:
+                    st.warning("⚠️ အချက်အလက်များ ပြည့်စုံအောင် ဖြည့်စွက်ပါ။")        # ၂။ Edit & Delete ပြုလုပ်သည့်အပိုင်း
         with col_mod:
             st.subheader("🛠️ Edit or Delete")
             # Database ထဲမှ data များအားလုံးကို ဆွဲထုတ်ခြင်း
