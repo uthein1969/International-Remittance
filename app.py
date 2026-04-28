@@ -283,37 +283,40 @@ if search_query:
                     u_reason = st.text_area("Edit Reason", value=target.get('remark', '') or "", height=115)
                         
                     b_col1, b_col2 = st.columns(2)
-                with b_col1:
-                    if st.button("🔄 Update Record", type="secondary", use_container_width=True):
-                        try:
-                # ဤစာကြောင်းများအားလုံး try: အောက်တွင် တစ်ဆင့်ဝင်နေရပါမည်
-                            supabase.table("blacklist").update({
-                                "name": u_name,
-                                "nrcno": u_nrc,
-                                "remark": u_reason
-                            }).eq("id", target['id']).execute()
-                
-            # အောက်ပါ စာကြောင်း ၂ ကြောင်းကို အထဲသို့ တစ်ဆင့် တိုးပေးပါ
-                            st.success("✅ Updated successfully!")
-                            st.rerun()
-                
-                        except Exception as e:
-                            st.error(f"Update Error: {e}")
-                                    
-                with b_col2:
-                    if st.button("🗑️ Delete Record", type="primary", use_container_width=True):
-                        try:
-                            supabase.table("blacklist").delete().eq("id", target['id']).execute()
-                            st.warning("🗑️ Deleted successfully!")
-                            st.rerun()
-                        except Exception as e:
-                            st.error(f"Delete Error: {e}")
-        else:
-            st.info("No matching records found. (ရိုက်ထည့်ထားသော စာလုံးပေါင်း မှန်မမှန် ပြန်စစ်ပေးပါ)")
-    except Exception as e:
-        st.error(f"Search Error: {e}")
+with b_col1:
+            if st.button("🔄 Update Record", type="secondary", use_container_width=True):
+                try:
+                    supabase.table("blacklist").update({
+                        "name": u_name,
+                        "nrcno": u_nrc,
+                        "remark": u_reason
+                    }).eq("id", target['id']).execute()
+                    
+                    # တောင်းဆိုထားသည့်အတိုင်း တစ်ဆင့်တိုးထားပါသည်
+                    st.success("✅ Updated successfully!")
+                    st.rerun()
+                    
+                except Exception as e:
+                    st.error(f"Update Error: {e}")
+
+        # --- Delete Section ---
+        with b_col2:
+            if st.button("🗑️ Delete Record", type="primary", use_container_width=True):
+                try:
+                    supabase.table("blacklist").delete().eq("id", target['id']).execute()
+                    st.warning("🗑️ Deleted successfully!")
+                    st.rerun()
+                except Exception as e:
+                    st.error(f"Delete Error: {e}")
+                    
+    else:
+        st.info("No matching records found. (ရိုက်ထည့်ထားသော စာလုံးပေါင်း မှန်မမှန် ပြန်စစ်ပေးပါ)")
+
+except Exception as e:
+    st.error(f"Search Error: {e}")
+
 else:
-        st.info("Please enter a name or NRC to start searching.")
+    st.info("Please enter a name or NRC to start searching.")    
     # --- ၇။ Inward Transaction Page ---
 elif page == "🏦 Inward Transaction":
         # ၁။ နောက်ဆုံး Transaction No ကို Database မှ ဆွဲထုတ်ခြင်း
