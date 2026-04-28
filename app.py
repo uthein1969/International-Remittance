@@ -184,38 +184,36 @@ elif page == "📋 Blacklist Info":
     
     # ၁။ NRC Data အားလုံးကို DataFrame ထဲသို့ ဆွဲထုတ်ခြင်း
     try:
-        # သင့် table structure အတိုင်း state_no နှင့် short_en ကို ယူပါသည်
         nrc_res = supabase.table("myanmar_nrc_data").select("state_no, short_en").execute()
         nrc_df = pd.DataFrame(nrc_res.data) if nrc_res.data else pd.DataFrame(columns=["state_no", "short_en"])
         
-        # Database ထဲမှာ text ဖြစ်နေသဖြင့် အကုန်လုံးကို string အဖြစ် တိတိကျကျ ပြောင်းပါသည်
         if not nrc_df.empty:
+            # text type ဖြစ်နေသဖြင့် string ပြောင်းပြီး အရှေ့အနောက်က space များကို ဖြတ်ပါသည်
             nrc_df['state_no'] = nrc_df['state_no'].astype(str).str.strip()
             nrc_df['short_en'] = nrc_df['short_en'].astype(str).str.strip()
     except Exception as e:
-        st.error(f"NRC Data Load Error: {e}")
+        st.error(f"Error: {e}")
         nrc_df = pd.DataFrame(columns=["state_no", "short_en"])
 
     # --- ADD NEW SECTION ---
     with st.expander("➕ Add New Blacklist Record", expanded=True):
-        with st.form("add_blacklist_form", clear_on_submit=True):
+        with st.form("add_blacklist_form"):
             name = st.text_input("Full Name (အမည်)")
+            
             st.write("🆔 NRC Number (New Format)")
             c1, c2, c3, c4 = st.columns([1, 1.5, 1, 2])
             
             with c1:
-                # State နံပါတ်များကို list လုပ်ခြင်း
-                all_states = sorted(nrc_df['state_no'].unique().tolist(), key=lambda x: int(x) if x.isdigit() else x) if not nrc_df.empty else ["1"]
-                selected_state = st.selectbox("State No", all_states)
+                # ရရှိလာသော State List ထဲက Space များကို ရှင်းပြီးမှ ထုတ်ပြပါသည်
+                all_states = sorted(list(set(nrc_df['state_no'].tolist())), key=lambda x: int(x) if x.isdigit() else 0)
+                selected_state = st.selectbox("State No", all_states if all_states else ["1"])
             
             with c2:
-                # ရွေးထားသော State String နှင့် တိုက်ရိုက် filter လုပ်ခြင်း
-                if not nrc_df.empty:
-                    tsps = sorted(nrc_df[nrc_df['state_no'] == str(selected_state)]['short_en'].unique().tolist())
-                else:
-                    tsps = []
-                selected_tsp = st.selectbox("Township", tsps if tsps else ["No Data Found"])
-            
+                # ရွေးချယ်လိုက်သော State ကိုလည်း strip() လုပ်ပြီးမှ Filter စစ်ပါသည်
+                filtered_tsps = nrc_df[nrc_df['state_no'] == str(selected_state).strip()]
+                tsps = sorted(filtered_tsps['short_en'].unique().tolist())
+                
+                selected_tsp = st.selectbox("Township", tsps if tsps else ["No Data"])        
             with c3:
                 nrc_type = st.selectbox("Type", ["(N)", "(E)", "(P)", "(A)"])
             with c4:
