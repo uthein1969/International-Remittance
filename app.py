@@ -291,10 +291,10 @@ if search_query:
                                 "nrcno": u_nrc, 
                                 "remark": u_reason
                                 }).eq("id", target['id']).execute()
-                                st.success("✅ Updated successfully!")
-                                st.rerun()
-                                except Exception as e:
-                                st.error(f"Update Error: {e}")
+                        st.success("✅ Updated successfully!")
+                        st.rerun()
+                        except Exception as e:
+                        st.error(f"Update Error: {e}")
                                     
                 with b_col2:
                     if st.button("🗑️ Delete Record", type="primary", use_container_width=True):
