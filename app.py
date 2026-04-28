@@ -224,7 +224,7 @@ elif page == "📋 Blacklist Info":
             if name and nrc_num and selected_tsp != "No Data":
                 full_nrc = f"{selected_state}/{selected_tsp}{nrc_type}{nrc_num}"
                 try:
-                    supabase.table("blacklist").insert({"name": name, "nrcno": full_nrc, "reason": reason}).execute()
+                    supabase.table("blacklist").insert({"name": name, "nrcno": full_nrc, "remark": remark}).execute()
                     st.success("✅ သိမ်းဆည်းပြီးပါပြီ။")
                     st.rerun()
                 except Exception as e:
@@ -257,7 +257,7 @@ elif page == "📋 Blacklist Info":
                             u_name = st.text_input("Edit Name", value=target.get('name', ''))
                             u_nrc = st.text_input("Edit NRC", value=target.get('nrcno', ''))
                         with col_e2:
-                            u_reason = st.text_area("Edit Reason", value=target.get('reason', '') or "", height=115)
+                            u_reason = st.text_area("Edit Remark", value=target.get('remark', '') or "", height=115)
                         
                         b_col1, b_col2 = st.columns(2)
                         with b_col1:
