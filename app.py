@@ -242,47 +242,50 @@ if st.button("Add to Blacklist", type="primary", use_container_width=True):
     search_query = st.text_input("Search by Name or NRC (ရှာဖွေရန် ရိုက်ထည့်ပါ)", placeholder="e.g. Maung Win or 12/tha ga ka")
 
     if search_query:
-        # Database ကနေ ရှာဖွေခြင်း
         try:
-            # ilike ကိုသုံးပြီး အမည် သို့မဟုတ် NRC ထဲမှာ ပါဝင်တာနဲ့ ဆွဲထုတ်ပါသည်
+            # Search logic
             search_res = supabase.table("blacklist").select("*").or_(f"name.ilike.%{search_query}%,nrcno.ilike.%{search_query}%").execute()
             
             if search_res.data:
                 st.success(f"Found {len(search_res.data)} matching records.")
-                
-                # ရှာတွေ့တဲ့ record များကို dropdown မှာ ပြခြင်း
                 search_options = {f"{r['name']} ({r['nrcno']})": r for r in search_res.data}
                 selected_key = st.selectbox("Select precise record to modify", list(search_options.keys()))
                 
                 if selected_key:
                     target = search_options[selected_key]
                     
-                    # Edit Form ကို Box လေးနဲ့ ပြသခြင်း
+                    # Edit Form ကို Box လေးဖြင့် ပြသခြင်း
                     with st.container(border=True):
                         col_e1, col_e2 = st.columns(2)
                         with col_e1:
                             u_name = st.text_input("Edit Name", value=target.get('name', ''))
                             u_nrc = st.text_input("Edit NRC", value=target.get('nrcno', ''))
                         with col_e2:
-                            u_reason = st.text_area("Edit Reason", value=target.get('remark', '') or "")
+                            # remark ဟု ပြောင်းလဲအသုံးပြုထားပါသည်
+                            u_reason = st.text_area("Edit Reason", value=target.get('remark', '') or "", height=115)
                         
                         b_col1, b_col2 = st.columns(2)
                         with b_col1:
-                            if st.button("🔄 Update Record"):
-                        supabase.table("blacklist").update({
-                            "name": u_name, 
-                            "nrcno": u_nrc, 
-                            "remark": u_reason
-                        }).eq("id", target['id']).execute()
-                                st.success("Updated successfully!")
-                                st.rerun()
+                            if st.button("🔄 Update Record", type="secondary", use_container_width=True):
+                                try:
+                                    supabase.table("blacklist").update({
+                                        "name": u_name, 
+                                        "nrcno": u_nrc, 
+                                        "remark": u_reason
+                                    }).eq("id", target['id']).execute()
+                                    st.success("✅ Updated successfully!")
+                                    st.rerun()
+                                except Exception as e:
+                                    st.error(f"Update Error: {e}")
+                                    
                         with b_col2:
                             if st.button("🗑️ Delete Record", type="primary", use_container_width=True):
-                            # ဒီနေရာမှာလည်း Space (၄) ချက် ပိုခြားရပါမယ်
-                            try:
-                                supabase.table("blacklist").delete().eq("id", target['id']).execute()
-                                st.warning("🗑️ Deleted successfully!")
-                                st.rerun()
+                                try:
+                                    supabase.table("blacklist").delete().eq("id", target['id']).execute()
+                                    st.warning("🗑️ Deleted successfully!")
+                                    st.rerun()
+                                except Exception as e:
+                                    st.error(f"Delete Error: {e}")
             else:
                 st.info("No matching records found.")
         except Exception as e:
