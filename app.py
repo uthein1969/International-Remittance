@@ -287,11 +287,11 @@ if search_query:
                     if st.button("🔄 Update Record", type="secondary", use_container_width=True):
                         try:
                 # ဤစာကြောင်းများအားလုံး try: အောက်တွင် တစ်ဆင့်ဝင်နေရပါမည်
-                        supabase.table("blacklist").update({
-                        "name": u_name,
-                        "nrcno": u_nrc,
-                        "remark": u_reason
-                        }).eq("id", target['id']).execute()
+                            supabase.table("blacklist").update({
+                            "name": u_name,
+                            "nrcno": u_nrc,
+                            "remark": u_reason
+                            }).eq("id", target['id']).execute()
                 
                 # အောက်ပါ စာကြောင်း ၂ ကြောင်းကို အထဲသို့ တစ်ဆင့် တိုးပေးပါ
                         st.success("✅ Updated successfully!")
