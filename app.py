@@ -293,9 +293,9 @@ if search_query:
                             "remark": u_reason
                             }).eq("id", target['id']).execute()
                 
-                # အောက်ပါ စာကြောင်း ၂ ကြောင်းကို အထဲသို့ တစ်ဆင့် တိုးပေးပါ
-                        st.success("✅ Updated successfully!")
-                        st.rerun()
+            # အောက်ပါ စာကြောင်း ၂ ကြောင်းကို အထဲသို့ တစ်ဆင့် တိုးပေးပါ
+            st.success("✅ Updated successfully!")
+            st.rerun()
                 
             except Exception as e:
                 st.error(f"Update Error: {e}")
