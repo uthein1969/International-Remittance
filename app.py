@@ -314,7 +314,8 @@ elif page == "🏦 Inward Transaction":
             mmk_rate = st.number_input("MMK Rate", min_value=0.0, format="%.2f")
             mmk_allowance = st.number_input("MMK Allowance", min_value=0.0, format="%.2f")
         with s_usd_col:
-        usd_equiv = st.number_input("USD Equivalent", min_value=0.0)
+            usd_equiv = st.number_input("USD Equivalent", min_value=0.0)
+            total_mmk = st.number_input("Total MMK", min_value=0.0)
         # တွက်ချက်ရရှိတဲ့ total ကို variable တစ်ခုထဲ သိမ်းထားပါမယ်
         calc_total_mmk = (amount * mmk_rate) + mmk_allowance
         st.markdown(f"### Total MMK: **{calc_total_mmk:,.2f}**")
