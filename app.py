@@ -308,7 +308,7 @@ if search_query:
                             st.rerun()
                         except Exception as e:
                             st.error(f"Delete Error: {e}")
-else:
+    else:
         st.info("No matching records found. (ရိုက်ထည့်ထားသော စာလုံးပေါင်း မှန်မမှန် ပြန်စစ်ပေးပါ)")
     except Exception as e:
         st.error(f"Search Error: {e}")
