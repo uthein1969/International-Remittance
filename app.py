@@ -64,7 +64,7 @@ page = st.sidebar.radio("Go to:",
  "🔍 Search Transactions", 
  "📋 Blacklist Info", 
  "🏦 Inward Transaction",
-"⚙️ System Control"])
+ "⚙️ System Control"])
 st.sidebar.markdown("---")
 st.sidebar.info("System Version 2.0v")
 
