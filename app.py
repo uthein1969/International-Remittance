@@ -194,59 +194,63 @@ elif page == "📋 Blacklist Info":
         st.error(f"NRC Data Load Error: {e}")
         nrc_df = pd.DataFrame(columns=["state_no", "short_en"])
 
-    # ၂။ ADD NEW SECTION (Dropdown များကို Form အပြင်ထုတ်ထားပါသည်)
-    with st.expander("➕ Add New Blacklist Record", expanded=True):
-        name = st.text_input("Full Name (အမည်)")
-        
-        st.write("🆔 NRC Number (New Format)")
-        c1, c2, c3, c4 = st.columns([1, 1.5, 1, 2])
-        
-        with c1:
-            # State No ရွေးချယ်ခြင်း
-            all_states = sorted(nrc_df['state_no'].unique().tolist(), key=lambda x: int(x) if x.isdigit() else 99)
-            # key="state_key" သုံး၍ session state သိမ်းပါသည်
-            selected_state = st.selectbox("State No", all_states, key="state_key")
-        
-        with c2:
-            # ရွေးချယ်ထားသော state အပေါ်မူတည်၍ Township များ ချက်ချင်းပြောင်းရန်
-            filtered_tsps = nrc_df[nrc_df['state_no'] == selected_state]['short_en'].unique().tolist()
-            selected_tsp = st.selectbox("Township", sorted(filtered_tsps) if filtered_tsps else ["No Data"])
-        
-        with c3:
-            nrc_type = st.selectbox("Type", ["(N)", "(E)", "(P)", "(A)"])
-        with c4:
-            nrc_num = st.text_input("Number", max_chars=6)
+# Form clear ဖြစ်စေရန် Initial state သတ်မှတ်ခြင်း
+if 'name_input' not in st.session_state:
+    st.session_state.name_input = ""
+if 'nrc_num_input' not in st.session_state:
+    st.session_state.nrc_num_input = ""
+if 'remark_input' not in st.session_state:
+    st.session_state.remark_input = ""
 
-        reason = st.text_area("Reason for Blacklisting")
-        
-        # သိမ်းဆည်းရန် ခလုတ်
-        if st.button("Add to Blacklist", type="primary", use_container_width=True):
-            if name and nrc_num and selected_tsp != "No Data":
-                full_nrc = f"{selected_state}/{selected_tsp}{nrc_type}{nrc_num}"
+with st.expander("➕ Add New Blacklist Record", expanded=True):
+    # session_state ကို text_input များတွင် ချိတ်ဆက်ထားပါသည်
+    name = st.text_input("Full Name (အမည်)", key="name_input")
+    
+    st.write("🆔 NRC Number (New Format)")
+    c1, c2, c3, c4 = st.columns([1, 1.5, 1, 2])
+    
+    with c1:
+        all_states = sorted(nrc_df['state_no'].unique().tolist(), key=lambda x: int(x) if x.isdigit() else 99)
+        selected_state = st.selectbox("State No", all_states, key="st_key")
+    with c2:
+        filtered_tsps = nrc_df[nrc_df['state_no'] == selected_state]['short_en'].unique().tolist()
+        selected_tsp = st.selectbox("Township", sorted(filtered_tsps) if filtered_tsps else ["No Data"], key="tsp_key")
+    with c3:
+        nrc_type = st.selectbox("Type", ["(N)", "(E)", "(P)", "(A)"], key="type_key")
+    with c4:
+        # NRC Number အတွက် session_state သုံးထားပါသည်
+        nrc_num = st.text_input("Number", max_chars=6, key="nrc_num_input")
+
+    reason = st.text_area("Reason for Blacklisting", key="remark_input")
+    
+    if st.button("Add to Blacklist", type="primary", use_container_width=True):
+        if name and nrc_num and selected_tsp != "No Data":
+            full_nrc = f"{selected_state}/{selected_tsp}{nrc_type}{nrc_num}"
+            
+            try:
+                # Duplicate Check
+                check_exists = supabase.table("blacklist").select("nrcno").eq("nrcno", full_nrc).execute()
                 
-                try:
-                    # ၁။ Database ထဲမှာ ဒီ NRC ရှိနှင့်ပြီးသားလား အရင်စစ်ဆေးခြင်း
-                    check_exists = supabase.table("blacklist").select("nrcno").eq("nrcno", full_nrc).execute()
+                if check_exists.data:
+                    st.error(f"❌ '{full_nrc}' သည် Database ထဲတွင် ရှိနှင့်ပြီးသားဖြစ်ပါသည်")
+                else:
+                    # Insert Data
+                    supabase.table("blacklist").insert({
+                        "name": name, "nrcno": full_nrc, "remark": reason
+                    }).execute()
                     
-                    if check_exists.data:
-                        # ရှိနှင့်ပြီးသားဖြစ်ပါက Error ပြရန်
-                        st.error(f"❌ '{full_nrc}' သည် Database ထဲတွင် ရှိနှင့်ပြီးသားဖြစ်ပါသည် (Already Exists)")
-                    else:
-                        # ၂။ မရှိသေးပါက အသစ်ထည့်ခြင်း (column name ကို 'remark' ဟု သုံးထားပါသည်)
-                        supabase.table("blacklist").insert({
-                            "name": name, 
-                            "nrcno": full_nrc, 
-                            "remark": reason  # screenshot အရ remark ဖြစ်ပါသည်
-                        }).execute()
-                        
-                        st.success(f"✅ '{full_nrc}' အတွက် Saved Successfully!")
-                        # အောင်မြင်ပါက ၃ စက္ကန့်အကြာတွင် screen refresh လုပ်ရန်
-                        import time
-                        time.sleep(2)
-                        st.rerun()
-                        
-                except Exception as e:
-                    st.error(f"Save Error: {e}")
+                    st.success("✅ Saved Successfully!")
+                    
+                    # Form ကို Clear လုပ်ရန် session state များကို reset လုပ်ခြင်း
+                    st.session_state.name_input = ""
+                    st.session_state.nrc_num_input = ""
+                    st.session_state.remark_input = ""
+                    
+                    import time
+                    time.sleep(1)
+                    st.rerun()
+            except Exception as e:
+                st.error(f"Save Error: {e}")
             else:
                 st.warning("⚠️ ကျေးဇူးပြု၍ အချက်အလက်များ ပြည့်စုံစွာ ဖြည့်စွက်ပေးပါ။")
     st.subheader("🛠️ Search & Edit/Delete Blacklist")
