@@ -295,6 +295,7 @@ elif page == "📋 Blacklist Info":
 
 # --- ၇။ Inward Transaction Page ---
     elif page == "🏦 Inward Transaction":
+    st.header("🏦 Inward Transaction Management")
         # ၁။ နောက်ဆုံး Transaction No ကို Database မှ ဆွဲထုတ်ခြင်း
         try:
             last_trans = supabase.table("inward_transactions").select("transaction_no").order("created_at", desc=True).limit(1).execute()
