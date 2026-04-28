@@ -319,30 +319,30 @@ elif page == "🏦 Inward Transaction":
 
 # --- ၂။ RECEIVER INFORMATION ---
 st.subheader("🔵 RECEIVER INFORMATION :")
-    with st.container(border=True):
-        r_col1, r_col2 = st.columns(2)
-        r_name = r_col1.text_input("Receiver Name:")
-        r_nrc = r_col2.text_input("Receiver NRC:")
+with st.container(border=True):
+    r_col1, r_col2 = st.columns(2)
+    r_name = r_col1.text_input("Receiver Name:")
+    r_nrc = r_col2.text_input("Receiver NRC:")
 
-        r_addr_col, r_ph_col, r_purp_col = st.columns([2, 1, 1])
-        r_address = r_addr_col.text_input("Receiver Address:")
-        r_phone = r_ph_col.text_input("Receiver Phone:")
-        r_purpose = r_purp_col.selectbox("Purpose", ["Family Support", "Business", "Gift"])
+    r_addr_col, r_ph_col, r_purp_col = st.columns([2, 1, 1])
+    r_address = r_addr_col.text_input("Receiver Address:")
+    r_phone = r_ph_col.text_input("Receiver Phone:")
+    r_purpose = r_purp_col.selectbox("Purpose", ["Family Support", "Business", "Gift"])
 
-        r_state_col, r_point_col = st.columns(2)
-        r_state = r_state_col.selectbox("State & Division", ["Yangon", "Mandalay", "Shan", "Bago"])
-        r_point = r_point_col.text_input("Withdraw Point:")
-        r_remark = st.text_area("Remark for Withdraw Point:")
+    r_state_col, r_point_col = st.columns(2)
+    r_state = r_state_col.selectbox("State & Division", ["Yangon", "Mandalay", "Shan", "Bago"])
+    r_point = r_point_col.text_input("Withdraw Point:")
+    r_remark = st.text_area("Remark for Withdraw Point:")
 
 # --- ၃။ SENDER INFORMATION ---
 st.subheader("🔵 SENDER INFORMATION :")
-    with st.container(border=True):
-        s_name_col, s_id_col, s_country_col = st.columns([2, 2, 1])
-        s_name = s_name_col.text_input("Sender Name:")
-        s_id = s_id_col.text_input("NRC/Passport ID:")
-        s_country = s_country_col.text_input("Country", value="Thailand")
+with st.container(border=True):
+    s_name_col, s_id_col, s_country_col = st.columns([2, 2, 1])
+    s_name = s_name_col.text_input("Sender Name:")
+    s_id = s_id_col.text_input("NRC/Passport ID:")
+    s_country = s_country_col.text_input("Country", value="Thailand")
 
-        s_cur_col, s_mmk_col, s_usd_col = st.columns(3)
+    s_cur_col, s_mmk_col, s_usd_col = st.columns(3)
         with s_cur_col:
             currency = st.selectbox("Currency", ["THB", "USD", "SGD"])
             amount = st.number_input("Amount", min_value=0.0, format="%.2f")
