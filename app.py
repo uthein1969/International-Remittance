@@ -178,10 +178,11 @@ if page == "🔍 Search Transactions":
     except Exception as e:
         st.error(f"Search Error: {e}")
 
-# --- ၆။ Blacklist System Page ---elif page == "📋 Blacklist Info":
+# --- ၆။ Blacklist System Page ---
+    elif page == "📋 Blacklist Info":
     st.title("📋 Blacklist Management")
     
-    # ၁။ NRC Data ကို စစ်ဆေးပြီး ဆွဲထုတ်ခြင်း
+    # ၁။ NRC Data ကို ဆွဲထုတ်ခြင်း
     nrc_res = supabase.table("myanmar_nrc_data").select("state_no, short_en").execute()
     nrc_df = pd.DataFrame(nrc_res.data) if nrc_res.data else pd.DataFrame()
 
@@ -192,19 +193,15 @@ if page == "🔍 Search Transactions":
             c1, c2, c3, c4 = st.columns([1, 1.5, 1, 2])
             
             with c1:
-                # State စာရင်းထုတ်ရန်
                 state_list = sorted(nrc_df['state_no'].unique().astype(str).tolist()) if not nrc_df.empty else ["1"]
                 sel_state = st.selectbox("State No", state_list)
             
             with c2:
-                # Township Filter Logic (Indentation ကို ဤနေရာတွင် သတိပြုပါ)
                 if not nrc_df.empty:
-                    # User ရွေးချယ်လိုက်သော state နှင့် database ထဲက state ကို တိုက်စစ်ခြင်း
                     match_tsps = nrc_df[nrc_df['state_no'].astype(str).str.strip() == str(sel_state).strip()]
                     tsp_options = sorted(match_tsps['short_en'].unique().tolist())
                 else:
                     tsp_options = []
-                
                 selected_tsp = st.selectbox("Township", tsp_options if tsp_options else ["No Data Found"])
             
             with c3:
@@ -215,15 +212,19 @@ if page == "🔍 Search Transactions":
             reason = st.text_area("Reason")
             submit_bl = st.form_submit_button("Add to Blacklist", type="primary")
 
+            # --- Syntax ပြင်ဆင်ထားသော နေရာ (Try-Except Block) ---
             if submit_bl:
                 if name and nrc_num and selected_tsp != "No Data Found":
                     full_nrc = f"{sel_state}/{selected_tsp}{nrc_type}{nrc_num}"
-                    supabase.table("blacklist").insert({"name": name, "nrcno": full_nrc, "reason": reason}).execute()
-                    st.success("Saved Successfully!")
-                    st.rerun()
+                    try:
+                        # try နဲ့ except ကို တစ်တန်းတည်း ထားထားပါတယ်
+                        supabase.table("blacklist").insert({"name": name, "nrcno": full_nrc, "reason": reason}).execute()
+                        st.success("Saved Successfully!")
+                        st.rerun()
                     except Exception as e:
-                        st.error(f"Save Error: {e}")    
-    
+                        st.error(f"Error saving data: {e}")
+                else:
+                    st.warning("Please fill all required fields.")    
     # --- EDIT OR DELETE SECTION (UI အသစ်ဖြင့် ပြင်ဆင်ထားပါသည်) ---
     st.subheader("🛠️ Edit or Delete Record")
     
