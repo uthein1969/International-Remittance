@@ -309,13 +309,13 @@ elif page == "🏦 Inward Transaction":
 
 # --- Header Information ---
     h_col1, h_col2, h_col3 = st.columns(3)
-        with h_col1:
-            st.text_input("Date:", value=now_yangon.strftime("%Y-%m-%d %H:%M:%S"), disabled=True)
-        with h_col2:
+    with h_col1:
+        st.text_input("Date:", value=now_yangon.strftime("%Y-%m-%d %H:%M:%S"), disabled=True)
+    with h_col2:
         # Branch တွေကို DB ထဲက ဆွဲထုတ်သုံးရင် ပိုကောင်းပါတယ် (လက်ရှိ version အတွက် selectbox ပဲထားပါဦးမည်)
-            branch = st.selectbox("Select Branch", ["Yangon Branch", "Mandalay Branch", "Nay Pyi Taw Branch"])
-        with h_col3:
-            trans_no = st.text_input("Transaction No:", value=new_no)
+        branch = st.selectbox("Select Branch", ["Yangon Branch", "Mandalay Branch", "Nay Pyi Taw Branch"])
+    with h_col3:
+        trans_no = st.text_input("Transaction No:", value=new_no)
 
 # --- ၂။ RECEIVER INFORMATION ---
 st.subheader("🔵 RECEIVER INFORMATION :")
