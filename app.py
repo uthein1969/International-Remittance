@@ -285,17 +285,17 @@ if search_query:
                     b_col1, b_col2 = st.columns(2)
                 with b_col1:
                     if st.button("🔄 Update Record", type="secondary", use_container_width=True):
-                try:
+                        try:
                 # ဤစာကြောင်းများအားလုံး try: အောက်တွင် တစ်ဆင့်ဝင်နေရပါမည်
-                supabase.table("blacklist").update({
-                    "name": u_name,
-                    "nrcno": u_nrc,
-                    "remark": u_reason
-                }).eq("id", target['id']).execute()
+                        supabase.table("blacklist").update({
+                        "name": u_name,
+                        "nrcno": u_nrc,
+                        "remark": u_reason
+                        }).eq("id", target['id']).execute()
                 
                 # အောက်ပါ စာကြောင်း ၂ ကြောင်းကို အထဲသို့ တစ်ဆင့် တိုးပေးပါ
-                st.success("✅ Updated successfully!")
-                st.rerun()
+                        st.success("✅ Updated successfully!")
+                        st.rerun()
                 
             except Exception as e:
                 st.error(f"Update Error: {e}")
