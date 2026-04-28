@@ -278,8 +278,10 @@ if st.button("Add to Blacklist", type="primary", use_container_width=True):
                                 st.rerun()
                         with b_col2:
                             if st.button("🗑️ Delete Record", type="primary", use_container_width=True):
+                            # ဒီနေရာမှာလည်း Space (၄) ချက် ပိုခြားရပါမယ်
+                            try:
                                 supabase.table("blacklist").delete().eq("id", target['id']).execute()
-                                st.warning("Deleted successfully!")
+                                st.warning("🗑️ Deleted successfully!")
                                 st.rerun()
             else:
                 st.info("No matching records found.")
