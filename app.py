@@ -298,7 +298,7 @@ if search_query:
                             st.rerun()
                 
                         except Exception as e:
-                        st.error(f"Update Error: {e}")
+                            st.error(f"Update Error: {e}")
                                     
                 with b_col2:
                     if st.button("🗑️ Delete Record", type="primary", use_container_width=True):
