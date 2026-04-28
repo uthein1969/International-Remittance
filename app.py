@@ -232,13 +232,12 @@ elif page == "📋 Blacklist Info":
                     st.warning("⚠️ အချက်အလက်များ ပြည့်စုံအောင် ဖြည့်စွက်ပါ။")        
         # ၂။ Edit & Delete ပြုလုပ်သည့်အပိုင်း
         # Column တွေကို အရင် Define လုပ်ပေးရပါမယ်
-        # ဥပမာ - Column ၂ ခု ခွဲချင်တယ်ဆိုရင်:
-            col_list, col_mod = st.columns([2, 1]) 
+        col_list, col_mod = st.columns([2, 1]) 
 
-with col_mod:
-    # ဒီနေရာမှာ သင့်ရဲ့ ခလုတ်တွေ ဒါမှမဟုတ် Input field တွေ ဆက်ရေးနိုင်ပါတယ်
-    st.write("Modification Area")
+        with col_mod:
+            # indent (Space 4 ခု) အတိအကျဖြင့် စတင်ရေးသားပါ
             st.subheader("🛠️ Edit or Delete")
+            
             # Database ထဲမှ data များအားလုံးကို ဆွဲထုတ်ခြင်း
             res_all = supabase.table("blacklist").select("*").execute()
             
@@ -252,7 +251,8 @@ with col_mod:
                 with st.container(border=True):
                     edit_name = st.text_input("Update Name", value=selected['name'])
                     edit_nrc = st.text_input("Update NRC", value=selected['nrcno'])
-                    edit_remark = st.text_area("Update Remark", value=selected['remark'])
+                    # Table ထဲမှာ remark လို့ နာမည်ပေးထားရင် remark သုံးပါ၊ reason ဖြစ်ရင် reason ပြောင်းပေးပါ
+                    edit_remark = st.text_area("Update Remark", value=selected.get('remark', selected.get('reason', '')))
                     
                     btn_col1, btn_col2 = st.columns(2)
                     
