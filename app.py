@@ -178,61 +178,49 @@ if page == "🔍 Search Transactions":
     except Exception as e:
         st.error(f"Search Error: {e}")
 
-# --- ၆။ Blacklist System Page ---
-elif page == "📋 Blacklist Info":
+# --- ၆။ Blacklist System Page ---elif page == "📋 Blacklist Info":
     st.title("📋 Blacklist Management")
     
-    # ၁။ NRC Data ဆွဲထုတ်ခြင်း
+    # ၁။ NRC Data ကို စစ်ဆေးပြီး ဆွဲထုတ်ခြင်း
     nrc_res = supabase.table("myanmar_nrc_data").select("state_no, short_en").execute()
     nrc_df = pd.DataFrame(nrc_res.data) if nrc_res.data else pd.DataFrame()
 
-    # --- ဒီစာကြောင်းလေးတွေက ဘာမှားနေလဲဆိုတာ ပြောပြပါလိမ့်မယ် ---
-    if nrc_df.empty:
-        st.error("❌ Database ထဲကနေ NRC Data လုံးဝ ဆွဲထုတ်လို့ မရပါဘူး (Table ထဲမှာ data မရှိတာ ဒါမှမဟုတ် Permission လိုနေတာ ဖြစ်နိုင်ပါတယ်)")
-    else:
-        st.info(f"✅ ဒေတာ {len(nrc_df)} ခု ရှာတွေ့ပါတယ်။")
-        # Column နာမည်တွေ မှန်မမှန် စစ်ဆေးရန်
-        st.write("Column names in DB:", list(nrc_df.columns))
-
-    # --- ADD NEW SECTION ---
     with st.expander("➕ Add New Blacklist Record", expanded=True):
-        with st.form("add_blacklist_form"):
+        with st.form("add_blacklist_form", clear_on_submit=True):
             name = st.text_input("Full Name (အမည်)")
             st.write("🆔 NRC Number (New Format)")
             c1, c2, c3, c4 = st.columns([1, 1.5, 1, 2])
             
             with c1:
-                # State List ကို Unique ဖြစ်အောင်လုပ်ပြီး စီပါသည်
+                # State စာရင်းထုတ်ရန်
                 state_list = sorted(nrc_df['state_no'].unique().astype(str).tolist()) if not nrc_df.empty else ["1"]
-            sel_state = st.selectbox("State No", state_list)
+                sel_state = st.selectbox("State No", state_list)
             
             with c2:
-                # Filter Logic ကို သေသေချာချာ စစ်ဆေးပါသည်
+                # Township Filter Logic (Indentation ကို ဤနေရာတွင် သတိပြုပါ)
                 if not nrc_df.empty:
-                # database ထဲက data နဲ့ user ရွေးတာ တူအောင် strip လုပ်ပါသည်
-                match_tsps = nrc_df[nrc_df['state_no'].astype(str).str.strip() == str(sel_state).strip()]
-                tsp_options = sorted(match_tsps['short_en'].unique().tolist())
-            else:
-                tsp_options = []
+                    # User ရွေးချယ်လိုက်သော state နှင့် database ထဲက state ကို တိုက်စစ်ခြင်း
+                    match_tsps = nrc_df[nrc_df['state_no'].astype(str).str.strip() == str(sel_state).strip()]
+                    tsp_options = sorted(match_tsps['short_en'].unique().tolist())
+                else:
+                    tsp_options = []
                 
-                st.selectbox("Township", tsp_options if tsp_options else ["No Options Found"])
-            st.form_submit_button("Submit")
+                selected_tsp = st.selectbox("Township", tsp_options if tsp_options else ["No Data Found"])
             
             with c3:
                 nrc_type = st.selectbox("Type", ["(N)", "(E)", "(P)", "(A)"])
             with c4:
                 nrc_num = st.text_input("Number", max_chars=6)
 
-            reason = st.text_area("Reason for Blacklisting")
-            submit_bl = st.form_submit_button("Add to Blacklist", type="primary", use_container_width=True)
+            reason = st.text_area("Reason")
+            submit_bl = st.form_submit_button("Add to Blacklist", type="primary")
 
             if submit_bl:
-                if name and nrc_num and chosen_tsp != "No Data":
-                    full_nrc = f"{chosen_state}/{chosen_tsp}{nrc_type}{nrc_num}"
-                    try:
-                        supabase.table("blacklist").insert({"name": name, "nrcno": full_nrc, "reason": reason}).execute()
-                        st.success(f"✅ {full_nrc} ကို သိမ်းဆည်းပြီးပါပြီ။")
-                        st.rerun()
+                if name and nrc_num and selected_tsp != "No Data Found":
+                    full_nrc = f"{sel_state}/{selected_tsp}{nrc_type}{nrc_num}"
+                    supabase.table("blacklist").insert({"name": name, "nrcno": full_nrc, "reason": reason}).execute()
+                    st.success("Saved Successfully!")
+                    st.rerun()
                     except Exception as e:
                         st.error(f"Save Error: {e}")    
     
