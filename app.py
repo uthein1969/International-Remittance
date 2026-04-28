@@ -309,9 +309,9 @@ if search_query:
                         except Exception as e:
                             st.error(f"Delete Error: {e}")
 else:
-                st.info("No matching records found. (ရိုက်ထည့်ထားသော စာလုံးပေါင်း မှန်မမှန် ပြန်စစ်ပေးပါ)")
-        except Exception as e:
-            st.error(f"Search Error: {e}")
+        st.info("No matching records found. (ရိုက်ထည့်ထားသော စာလုံးပေါင်း မှန်မမှန် ပြန်စစ်ပေးပါ)")
+    except Exception as e:
+        st.error(f"Search Error: {e}")
     else:
         st.info("Please enter a name or NRC to start searching.")
     # --- ၇။ Inward Transaction Page ---
