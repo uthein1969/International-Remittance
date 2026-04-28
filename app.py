@@ -220,22 +220,35 @@ elif page == "📋 Blacklist Info":
         reason = st.text_area("Reason for Blacklisting")
         
         # သိမ်းဆည်းရန် ခလုတ်
-      
-if st.button("Add to Blacklist", type="primary", use_container_width=True):
-    if name and nrc_num:
-        full_nrc = f"{selected_state}/{selected_tsp}{nrc_type}{nrc_num}"
-        try:
-            # Try အောက်မှာ Space (၄) ချက် ထပ်ခြားပါ
-            supabase.table("blacklist").insert({
-                "name": name, 
-                "nrcno": full_nrc, 
-                "remark": reason  # 'remark' ဖြစ်ရပါမယ်
-            }).execute()
-            st.success("✅ သိမ်းဆည်းပြီးပါပြီ။")
-            st.rerun()
-        except Exception as e:
-            # Except အောက်မှာလည်း Space (၄) ချက် တိတိကျကျ ခြားပေးပါ
-            st.error(f"Save Error: {e}")
+        if st.button("Add to Blacklist", type="primary", use_container_width=True):
+            if name and nrc_num and selected_tsp != "No Data":
+                full_nrc = f"{selected_state}/{selected_tsp}{nrc_type}{nrc_num}"
+                
+                try:
+                    # ၁။ Database ထဲမှာ ဒီ NRC ရှိနှင့်ပြီးသားလား အရင်စစ်ဆေးခြင်း
+                    check_exists = supabase.table("blacklist").select("nrcno").eq("nrcno", full_nrc).execute()
+                    
+                    if check_exists.data:
+                        # ရှိနှင့်ပြီးသားဖြစ်ပါက Error ပြရန်
+                        st.error(f"❌ '{full_nrc}' သည် Database ထဲတွင် ရှိနှင့်ပြီးသားဖြစ်ပါသည် (Already Exists)")
+                    else:
+                        # ၂။ မရှိသေးပါက အသစ်ထည့်ခြင်း (column name ကို 'remark' ဟု သုံးထားပါသည်)
+                        supabase.table("blacklist").insert({
+                            "name": name, 
+                            "nrcno": full_nrc, 
+                            "remark": reason  # screenshot အရ remark ဖြစ်ပါသည်
+                        }).execute()
+                        
+                        st.success(f"✅ '{full_nrc}' အတွက် Saved Successfully!")
+                        # အောင်မြင်ပါက ၃ စက္ကန့်အကြာတွင် screen refresh လုပ်ရန်
+                        import time
+                        time.sleep(2)
+                        st.rerun()
+                        
+                except Exception as e:
+                    st.error(f"Save Error: {e}")
+            else:
+                st.warning("⚠️ ကျေးဇူးပြု၍ အချက်အလက်များ ပြည့်စုံစွာ ဖြည့်စွက်ပေးပါ။")
     st.subheader("🛠️ Search & Edit/Delete Blacklist")
 
     # ၁။ Search Input (အမည် သို့မဟုတ် NRC ဖြင့် ရှာရန်)
