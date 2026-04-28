@@ -276,7 +276,7 @@ if search_query:
             with st.container(border=True):
                 col_e1, col_e2 = st.columns(2)
                 with col_e1:
-                     u_name = st.text_input("Edit Name", value=target.get('name', ''))
+                    u_name = st.text_input("Edit Name", value=target.get('name', ''))
                     u_nrc = st.text_input("Edit NRC", value=target.get('nrcno', ''))
                 with col_e2:
              # remark ဟု ပြောင်းလဲအသုံးပြုထားပါသည်
