@@ -266,9 +266,6 @@ elif page == "📋 Blacklist Info":
                         supabase.table("blacklist").delete().eq("id", target['id']).execute()
                         st.warning("Deleted!")
                         st.rerun()                        
-                except Exception as e:
-                            st.error(f"Delete Error: {e}")
-                else:
     st.info("No records found in Blacklist.")
 # --- ၇။ Inward Transaction Page ---
 elif page == "🏦 Inward Transaction":
