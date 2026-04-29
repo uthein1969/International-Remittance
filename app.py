@@ -145,23 +145,23 @@ if not st.session_state['logged_in']:
             u_pw = st.text_input("Password", type="password")
             submit = st.form_submit_button("Login", use_container_width=True)
             
-        if submit_btn:
-            try:
-                # ၁။ Database ကို စစ်ဆေးခြင်း (try ရဲ့ အထဲမှာ ရှိရပါမယ်)
-                res = supabase.table("user_setup").select("*").eq("user_id", input_user).eq("password", input_pass).execute()
+if submit_btn:
+    try:
+        # ၁။ Database ကို စစ်ဆေးခြင်း (try ရဲ့ အထဲမှာ ရှိရပါမယ်)
+        res = supabase.table("user_setup").select("*").eq("user_id", input_user).eq("password", input_pass).execute()
                 
-                # ၂။ ရလဒ် ရှိမရှိ စစ်ဆေးခြင်း (ဒီစာကြောင်းက try ရဲ့ အထဲကို ၄ စပေ့စ် ထပ်ဝင်ရပါမယ်)
-                if res.data and len(res.data) > 0:
-                    st.session_state['logged_in'] = True
-                    st.session_state['user_id'] = input_user
-                    st.success("🎉 Login Successful!")
-                    st.rerun()
-                else:
-                    st.error("❌ User ID သို့မဟုတ် Password မှားယွင်းနေပါသည်။")
+        # ၂။ ရလဒ် ရှိမရှိ စစ်ဆေးခြင်း (ဒီစာကြောင်းက try ရဲ့ အထဲကို ၄ စပေ့စ် ထပ်ဝင်ရပါမယ်)
+        if res.data and len(res.data) > 0:
+            st.session_state['logged_in'] = True
+            st.session_state['user_id'] = input_user
+            st.success("🎉 Login Successful!")
+            st.rerun()
+        else:
+            st.error("❌ User ID သို့မဟုတ် Password မှားယွင်းနေပါသည်။")
                     
-            except Exception as e:
-                # ၃။ Error တက်လျှင် ပြသခြင်း (except က try နဲ့ တန်းနေရပါမယ်)
-                st.error(f"Login Error: {e}")
+    except Exception as e:
+        # ၃။ Error တက်လျှင် ပြသခြင်း (except က try နဲ့ တန်းနေရပါမယ်)
+            st.error(f"Login Error: {e}")
 else:
     # Login ဝင်ပြီးသားဆိုလျှင် ပြသရမည့် Sidebar နှင့် Page များ
     st.sidebar.success(f"🔓 Logged in as: {st.session_state.get('user_id', 'Admin')}")
