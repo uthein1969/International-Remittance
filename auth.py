@@ -13,10 +13,11 @@ def check_login(supabase): # supabase ကို parameter အနေနဲ့ လ
             submit_btn = st.form_submit_button("Login")
             
             if submit_btn:
+                st.write(f"ID: {input_user}, PW: {input_pass}")
                 try:
                     # Database စစ်ဆေးခြင်း
                     res = supabase.table("user_setup").select("*").eq("user_id", input_user).eq("password", input_pass).execute()
-                    
+                    st.write(f"Result Data: {res.data}")
                     if res.data and len(res.data) > 0:
                         st.session_state['logged_in'] = True
                         st.session_state['user_id'] = input_user
