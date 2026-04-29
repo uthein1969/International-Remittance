@@ -9,22 +9,24 @@ def check_login(supabase):
             u_pw_input = st.text_input("Password", type="password")
             submit_btn = st.form_submit_button("Login")
             if submit_btn:
-                try:
-                    # ၁။ အရင်ဆုံး Database ကနေ data လှမ်းယူမယ် (Line 18 ကို အပေါ်တင်ပါ)
-                    res = supabase.table("user_setup").select("*").eq("user_id", u_id_input.strip()).eq("password", u_pw_input.strip()).execute()
+                u_id_input = str(u_id_raw).strip()
+                u_pw_input = str(u_pw_raw).strip()
     
-                    # ၂။ ပြီးမှ Screen ပေါ်မှာ ထုတ်ကြည့်မယ် (Line 17 ကို အောက်ချပါ)
-                    st.write("စစ်ဆေးမည့် User ID: ", u_id_input)
-                    st.write("Database Result: ", res.data)
+                try:
+                    # .execute() ပါရမည်ကို သတိပြုပါ
+                    res = supabase.table("user_setup").select("*").eq("user_id", u_id_input).eq("password", u_pw_input).execute()
+        
+                    st.write(f"ရှာဖွေနေသော ID: '{u_id_input}'")
+                    st.write("Database Result:", res.data)
 
                     if res.data and len(res.data) > 0:
                         st.session_state['logged_in'] = True
-                        st.session_state['user_id'] = u_id_input.strip()
+                        st.session_state['user_id'] = u_id_input
                         st.success("✅ Login Successful!")
                         st.rerun()
                     else:
                         st.error("❌ Invalid User ID or Password")
                 except Exception as e:
-                    st.error(f"Login Error: {e}")
-        return False
-    return True
+                        st.error(f"Error: {e}")
+            return False
+        return True
