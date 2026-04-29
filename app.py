@@ -135,27 +135,42 @@ if 'logged_in' not in st.session_state:
     st.session_state['logged_in'] = False
 
 if not st.session_state['logged_in']:
-    st.title("🔐 Admin Login")
-    with st.form("login"):
-        u_id = st.text_input("User ID")
-        u_pw = st.text_input("Password", type="password")
-        if st.form_submit_button("Login"):
-            # ရိုးရှင်းသော Login check (Database နှင့်လည်း ချိတ်ဆက်နိုင်သည်)
-            if u_id == "admin" and u_pw == "admin123":
-                st.session_state['logged_in'] = True
-                st.rerun()
-            else:
-                st.error("Invalid credentials")
+    st.title("🔐 Admin Login System")
+    
+    # Login Form ကို အလယ်မှာထားခြင်း
+    _, login_col, _ = st.columns([1, 2, 1])
+    with login_col:
+        with st.form("login_form"):
+            u_id = st.text_input("User ID")
+            u_pw = st.text_input("Password", type="password")
+            submit = st.form_submit_button("Login", use_container_width=True)
+            
+            if submit:
+                try:
+                    # Database (user_setup table) ထဲမှာ သွားစစ်ခြင်း
+                    res = supabase.table("user_setup").select("*").eq("user_id", u_id).eq("password", u_pw).execute()
+                    
+                    if res.data:
+                        # User တွေ့ရင် Login ပေးဝင်မယ်
+                        st.session_state['logged_in'] = True
+                        st.session_state['user_id'] = u_id
+                        st.success("🎉 Login Successful!")
+                        st.rerun()
+                    else:
+                        st.error("❌ User ID သို့မဟုတ် Password မှားယွင်းနေပါသည်။")
+                except Exception as e:
+                    st.error(f"Login Error: {e}")
 else:
-    # Sidebar Navigation
-    st.sidebar.title("Menu")
-    page = st.sidebar.radio("Navigate to:", ["📋 Blacklist Info", "🏦 Inward Transaction", "⚙️ User Setup"])
+    # Login ဝင်ပြီးသားဆိုလျှင် ပြသရမည့် Sidebar နှင့် Page များ
+    st.sidebar.success(f"🔓 Logged in as: {st.session_state.get('user_id', 'Admin')}")
+    
+    page = st.sidebar.radio("Main Menu", ["📋 Blacklist Info", "🏦 Inward Transaction", "⚙️ User Setup"])
     
     if st.sidebar.button("Logout"):
         st.session_state['logged_in'] = False
         st.rerun()
 
-    # Page Routing - Function များကို ခေါ်ယူခြင်း
+    # Page Routing
     if page == "📋 Blacklist Info":
         show_blacklist_page()
     elif page == "🏦 Inward Transaction":
