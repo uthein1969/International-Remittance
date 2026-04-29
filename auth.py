@@ -1,6 +1,6 @@
 import streamlit as st
 
-def check_login(supabase): # supabase ကို parameter အနေနဲ့ လက်ခံရပါမယ်
+    def check_login(supabase): # supabase ကို parameter အနေနဲ့ လက်ခံရပါမယ်
     if 'logged_in' not in st.session_state:
         st.session_state['logged_in'] = False
 
