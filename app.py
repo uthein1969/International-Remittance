@@ -10,6 +10,7 @@ supabase: Client = create_client(URL, KEY)
 
 # Login စစ်ဆေးခြင်း
 if auth.check_login(supabase):
+    st.sidebar.success(f"Logged in as: {st.session_state['user_id']}")
     # Login အောင်မြင်မှ Sidebar Menu ပြမည်
     st.sidebar.title("Menu")
     page = st.sidebar.radio("Go to:", ["📋 Blacklist Info", "🏦 Inward Transaction"])
