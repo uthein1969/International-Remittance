@@ -1,31 +1,39 @@
 import streamlit as st
+
 def check_login(supabase):
+    # Session state ကို စစ်ဆေးခြင်း
     if 'logged_in' not in st.session_state:
         st.session_state['logged_in'] = False
+
+    # Login မဝင်ရသေးလျှင် Login Form ပြသမည်
     if not st.session_state['logged_in']:
         st.title("🔐 Admin Login System")
+        
         with st.form("login_form"):
-            u_id_input = st.text_input("User ID")
-            u_pw_input = st.text_input("Password", type="password")
-            submit_btn = st.form_submit_button("Login")
+            u_id_raw = st.text_input("User ID")
+            u_pw_raw = st.text_input("Password", type="password")
+            submit_btn = st.form_submit_button("Login", use_container_width=True)
+
             if submit_btn:
-            try:
-                # ၁။ Database query ကို အရင် run မယ်
-                res = supabase.table("user_setup").select("*").eq("user_id", u_id_input.strip()).eq("password", u_pw_input.strip()).execute()
+                u_id_input = u_id_raw.strip()
+                u_pw_input = u_pw_raw.strip()
                 
-                # ၂။ res ထဲမှာ data တကယ်ပါလာမှ စစ်ဆေးမယ် (ဒီအဆင့်က အရေးကြီးပါတယ်)
-                if res is not None and hasattr(res, 'data') and res.data:
-                    st.write("✅ Database မှ အချက်အလက် ရှာဖွေတွေ့ရှိပါသည်။")
-                    st.session_state['logged_in'] = True
-                    st.session_state['user_id'] = u_id_input.strip()
-                    st.success("Login Successful!")
-                    st.rerun()
-                else:
-                    # Data မရှိရင် (သို့မဟုတ်) password မှားရင် ဒီကို ရောက်မယ်
-                    st.error("❌ Invalid User ID or Password")
-                    st.write("DEBUG: Database က ဘာမှပြန်မပေးပါ (Empty Result)")
-            
-            except Exception as e:
-                # Database connection error သို့မဟုတ် အခြား error များအတွက်
-                st.error(f"⚠️ System Error: {str(e)}")        return False
+                try:
+                    # Database မှ data ကို အရင်ယူမည် (Line အစီအစဉ် မှန်ကန်ရမည်)
+                    res = supabase.table("user_setup").select("*").eq("user_id", u_id_input).eq("password", u_pw_input).execute()
+                    
+                    # res.data ရှိမရှိ သေချာစွာ စစ်ဆေးခြင်း
+                    if res and hasattr(res, 'data') and len(res.data) > 0:
+                        st.session_state['logged_in'] = True
+                        st.session_state['user_id'] = u_id_input
+                        st.success("✅ Login Successful!")
+                        st.rerun()
+                    else:
+                        st.error("❌ Invalid User ID or Password")
+                except Exception as e:
+                    st.error(f"⚠️ Connection Error: {str(e)}")
+        
+        st.stop() # Login မဝင်မချင်း အောက်က code တွေကို ဆက်မသွားစေရန်
+        return False
+    
     return True
