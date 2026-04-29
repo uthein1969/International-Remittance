@@ -14,6 +14,13 @@ def check_login(supabase):
             if submit_btn:
                 try:
                     # အောက်ပါ Line ကို အတိအကျဖြစ်အောင် ပြင်ပါ (Password စစ်ဆေးခြင်း ပါရပါမည်)
+                    st.write(f"စစ်ဆေးမည့် User ID: '{u_id_input}'") 
+                    st.write(f"စစ်ဆေးမည့် Password: '{u_pw_input}'")
+
+                    res = supabase.table("user_setup").select("*").eq("user_id", u_id_input.strip()).eq("password", u_pw_input.strip()).execute()
+    
+                    # ၂။ Database ကနေ data ပြန်လာမလာ စစ်မယ်
+                    st.write("Database Result:", res.data)
                     res = supabase.table("user_setup").select("*").eq("user_id", u_id_input.strip()).eq("password", u_pw_input.strip()).execute()
                     
                     if res.data and len(res.data) > 0:
