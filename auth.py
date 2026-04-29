@@ -10,12 +10,13 @@ def check_login(supabase):
             submit_btn = st.form_submit_button("Login")
             if submit_btn:
                 try:
-                    # အောက်ပါ Line ကို အတိအကျဖြစ်အောင် ပြင်ပါ (Password စစ်ဆေးခြင်း ပါရပါမည်)
-                    st.write(f"စစ်ဆေးမည့် User ID: '{u_id_input}'") 
-                    st.write(f"စစ်ဆေးမည့် Password: '{u_pw_input}'")   
-                    # ၂။ Database ကနေ data ပြန်လာမလာ စစ်မယ်
-                    st.write("Database Result:", res.data)
+                    # ၁။ အရင်ဆုံး Database ကနေ data လှမ်းယူမယ် (Line 18 ကို အပေါ်တင်ပါ)
                     res = supabase.table("user_setup").select("*").eq("user_id", u_id_input.strip()).eq("password", u_pw_input.strip()).execute()
+    
+                    # ၂။ ပြီးမှ Screen ပေါ်မှာ ထုတ်ကြည့်မယ် (Line 17 ကို အောက်ချပါ)
+                    st.write("စစ်ဆေးမည့် User ID: ", u_id_input)
+                    st.write("Database Result: ", res.data)
+
                     if res.data and len(res.data) > 0:
                         st.session_state['logged_in'] = True
                         st.session_state['user_id'] = u_id_input.strip()
