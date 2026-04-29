@@ -21,6 +21,7 @@ def check_login(supabase):
                     if res.data and len(res.data) > 0:
                         st.session_state['logged_in'] = True
                         st.session_state['user_id'] = u_id_input
+                        st.session_state['password] = u_pw_input
                         st.success("Login Successful!")
                         st.rerun()
                     else:
