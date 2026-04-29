@@ -5,23 +5,23 @@ def check_login(supabase):
     if not st.session_state['logged_in']:
         st.title("🔐 Admin Login System")
         # auth.py ထဲတွင် ဤအတိုင်းပြင်ပါ
-with st.form("login_form"):
-    # variable အမည်မှ အစက်ကို ဖြုတ်လိုက်ပါ
-    u_id_input = st.text_input("User ID") 
-    u_pw_input = st.text_input("Password", type="password")
-    submit_btn = st.form_submit_button("Login")
+        with st.form("login_form"):
+            # variable အမည်မှ အစက်ကို ဖြုတ်လိုက်ပါ
+            u_id_input = st.text_input("User ID") 
+            u_pw_input = st.text_input("Password", type="password")
+            submit_btn = st.form_submit_button("Login")
 
-    if submit_btn:
-        try:
-            # .strip() ထည့်ခြင်းဖြင့် space အပိုပါလာပါက ဖယ်ရှားနိုင်သည်
-            res = supabase.table("user_setup").select("*").eq("user_id", u_id_input.strip()).eq("password", u_pw_input.strip()).execute()
+            if submit_btn:
+                try:
+                    # .strip() ထည့်ခြင်းဖြင့် space အပိုပါလာပါက ဖယ်ရှားနိုင်သည်
+                    res = supabase.table("user_setup").select("*").eq("user_id", u_id_input.strip()).eq("password", u_pw_input.strip()).execute()
             
-            if res.data and len(res.data) > 0:
-                st.session_state['logged_in'] = True
-                st.session_state['user_id'] = u_id_input
-                st.success("✅ Login Successful!")
-                st.rerun()
-            else:
-                st.error("❌ Invalid User ID or Password")
-        except Exception as e:
-            st.error(f"Login Error: {e}")
+                    if res.data and len(res.data) > 0:
+                        st.session_state['logged_in'] = True
+                        st.session_state['user_id'] = u_id_input
+                        st.success("✅ Login Successful!")
+                        st.rerun()
+                    else:
+                        st.error("❌ Invalid User ID or Password")
+                except Exception as e:
+                        st.error(f"Login Error: {e}")
