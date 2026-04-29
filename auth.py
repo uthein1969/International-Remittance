@@ -28,5 +28,5 @@ def check_login(supabase):
                         st.error("❌ Invalid User ID or Password")
                 except Exception as e:
                         st.error(f"Error: {e}")
-            return False
-        return True
+        return False
+    return True
