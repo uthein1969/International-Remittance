@@ -1,39 +1,47 @@
 import streamlit as st
+import pytz
+from datetime import datetime
 from supabase import create_client, Client
-import auth       # auth.py ကို ခေါ်ယူခြင်း
-import functions  # functions.py ကို ခေါ်ယူခြင်း
+import auth       # Login စစ်ဆေးရန်
+import functions  # လုပ်ဆောင်ချက်များအတွက်
 
-# Supabase Connection
+# --- Setup ---
+yangon_tz = pytz.timezone('Asia/Yangon')
+now_yangon = datetime.now(yangon_tz)
+
 URL = st.secrets["SUPABASE_URL"]
 KEY = st.secrets["SUPABASE_KEY"]
 supabase: Client = create_client(URL, KEY)
 
-# Login စစ်ဆေးခြင်း
+# --- Login Check ---
 if auth.check_login(supabase):
-    st.sidebar.success(f"Logged in as: {st.session_state.get('user_id', 'User')}")
+    # Sidebar Sidebar Success message
+    st.sidebar.write(f"👤 User: **{st.session_state.get('user_id')}**")
     
-    # Sidebar Menu ပြန်လည်တည်ဆောက်ခြင်း
-    st.sidebar.title("Menu")
-    
-    # သင်အသုံးပြုမည့် Menu List ကို ဤနေရာတွင် ပြန်ထည့်ပါ
-    page = st.sidebar.radio("Go to:", [
-        "📜 Blacklist Info", 
+    # --- Sidebar Navigation ---
+    st.sidebar.title("Main Menu")
+    menu = st.sidebar.radio("Navigate to:", [
+        "🏠 Dashboard",
+        "📜 Blacklist Info",
         "🏦 Inward Transaction",
-        "📊 Reports",           # ထပ်တိုးလိုသော Menu များ
-        "⚙️ Settings"
+        "⚙️ User Setup"
     ])
-
-    if st.sidebar.button("Logout"):
+    
+    # Logout Button
+    if st.sidebar.button("🚪 Logout"):
         st.session_state['logged_in'] = False
         st.rerun()
 
-    # ရွေးချယ်လိုက်သော Page အလိုက် Function များ ခေါ်ယူခြင်း
-    if page == "📜 Blacklist Info":
+    # --- Page Routing ---
+    if menu == "🏠 Dashboard":
+        st.title("🚀 Welcome to Admin System")
+        st.write(f"ယနေ့အချိန်: {now_yangon.strftime('%Y-%m-%d %H:%M:%S')}")
+        
+    elif menu == "📜 Blacklist Info":
         functions.show_blacklist_page(supabase)
         
-    elif page == "🏦 Inward Transaction":
-        functions.show_inward_page(supabase)
+    elif menu == "🏦 Inward Transaction":
+        functions.show_inward_page(supabase, now_yangon)
         
-    # အခြား Menu များရှိပါက functions ထဲတွင် ဆောက်ပြီး ဤနေရာတွင် ခေါ်နိုင်ပါသည်
-    # elif page == "📊 Reports":
-    #     functions.show_reports_page(supabase)
+    elif menu == "⚙️ User Setup":
+        functions.show_user_setup(supabase)
