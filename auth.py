@@ -8,9 +8,9 @@ def check_login(supabase): # supabase ကို parameter အနေနဲ့ လ
         st.title("🔐 Admin Login System")
         
         with st.form("login_form"):
-            input_user = st.text_input("User ID")
-            input_pass = st.text_input("Password", type="password")
-            submit_btn = st.form_submit_button("Login")
+                input_user = st.text_input("User ID")
+                input_pass = st.text_input("Password", type="password")
+                submit_btn = st.form_submit_button("Login")
             
             if submit_btn:
                 input_user = u_id_raw.strip() # ရိုက်ထည့်လိုက်တဲ့ space များကို ဖယ်ရှားခြင်း
