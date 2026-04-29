@@ -7,18 +7,18 @@ def check_login(supabase):
     if not st.session_state['logged_in']:
         st.title("🔐 Admin Login System")
         with st.form("login_form"):
-            # Variable အမည်မှ Dot (.) ကို ဖြုတ်လိုက်ပါပြီ
+            # Variable အမည်မှာ Dot (.) မပါအောင် သေချာစစ်ပါ
             u_id_raw = st.text_input("User ID")
             u_pw_raw = st.text_input("Password", type="password")
             submit_btn = st.form_submit_button("Login")
 
             if submit_btn:
-                # ရိုက်ထည့်လိုက်သော စာသားများမှ Space များကို ဖယ်ရှားခြင်း
+                # ရိုက်ထည့်လိုက်တဲ့ space များကို ဖယ်ရှားခြင်း
                 u_id_input = u_id_raw.strip()
                 u_pw_input = u_pw_raw.strip()
                 
                 try:
-                    # Database စစ်ဆေးခြင်း
+                    # Database ထဲမှာ user_id ကို ရှာခြင်း
                     res = supabase.table("user_setup").select("*").eq("user_id", u_id_input).eq("password", u_pw_input).execute()
                     
                     if res.data and len(res.data) > 0:
@@ -28,9 +28,6 @@ def check_login(supabase):
                         st.rerun()
                     else:
                         st.error("❌ Invalid User ID or Password")
-                        # Debug ပြန်လုပ်ရန် (အဆင်ပြေလျှင် ဖြုတ်နိုင်သည်)
-                        st.write(f"ID: {u_id_input}, PW: {u_pw_input}")
-                        st.write(f"Result: {res.data}")
                 except Exception as e:
                     st.error(f"Login Error: {e}")
         return False
