@@ -4,18 +4,18 @@ import pandas as pd
 def show_dashboard_page(supabase, now_yangon):
     st.title("📈 Transaction Dashboard")
     
-    # ရွေးချယ်ထားသော နိုင်ငံနှင့် မြန်မာစံတော်ချိန်အတွက် Placeholder များ
     col1, col2 = st.columns(2)
     with col1:
         st.info("🇲🇲 Myanmar Standard Time")
         mm_ptr = st.empty()
     with col2:
-        st.success(f"🌍 {st.session_state.get('sel_country')} Live Time")
+        # ရွေးချယ်ခဲ့သော နိုင်ငံအမည်ကို ခေါင်းစဉ်တွင်ပြရန်
+        st.success(f"🌍 {st.session_state.get('sel_country', 'International')} Live Time")
         intl_ptr = st.empty()
 
     st.divider()
 
-    # Inward Summary Logic
+    # Inward Transactions Summing (အရင်အတိုင်း)
     try:
         res = supabase.table("inward_transactions").select("amount, created_at").execute()
         if res.data:
@@ -38,13 +38,10 @@ def show_dashboard_page(supabase, now_yangon):
     return mm_ptr, intl_ptr
 
 def show_blacklist_page(supabase):
-    st.header("📋 Blacklist Management")
-    st.info("အမည်မည်းစာရင်းများကို ဤနေရာတွင် စစ်ဆေးနိုင်ပါသည်။")
+    st.header("📋 Blacklist Info")
 
 def show_inward_page(supabase, now_yangon):
-    st.header("🏦 Inward Transactions")
-    st.write(f"Entry Date: {now_yangon.strftime('%Y-%m-%d')}")
+    st.header("🏦 Inward Transaction")
 
 def show_system_control(supabase):
     st.header("⚙️ System Control")
-    st.tabs(["Country Setup", "Branch Setup", "User Setup"])
