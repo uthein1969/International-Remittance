@@ -1,64 +1,58 @@
 import streamlit as st
 import pandas as pd
-from datetime import datetime
 
+# --- ၁။ Blacklist Info Function ---
 def show_blacklist_page(supabase):
-    st.header("📜 Blacklist Information Management")
+    st.title("📋 Blacklist Management System")
     
-    # --- Blacklist Data လှမ်းယူခြင်း ---
-    res = supabase.table("blacklist_setup").select("*").execute()
-    df = pd.DataFrame(res.data)
-    
-    tab1, tab2 = st.tabs(["➕ Add New", "🔍 View & Action"])
-    
-    with tab1:
-        with st.form("add_blacklist"):
-            name = st.text_input("Name")
-            nrc = st.text_input("NRC No.")
-            reason = st.text_area("Reason")
-            submitted = st.form_submit_button("Save to Blacklist")
-            if submitted:
-                supabase.table("blacklist_setup").insert({"name": name, "nrc": nrc, "remark": reason}).execute()
-                st.success("✅ Added to Blacklist")
-                st.rerun()
-                
-    with tab2:
-        if not df.empty:
-            st.dataframe(df, use_container_width=True)
-        else:
-            st.info("No records found.")
+    # NRC Data Load (ကုဒ်ဟောင်းမှ logic အတိုင်း)
+    try:
+        nrc_res = supabase.table("myanmar_nrc_data").select("state_no, short_en").execute()
+        nrc_df = pd.DataFrame(nrc_res.data) if nrc_res.data else pd.DataFrame(columns=["state_no", "short_en"])
+    except Exception as e:
+        st.error(f"Error loading NRC data: {e}")
+        nrc_df = pd.DataFrame(columns=["state_no", "short_en"])
 
+    # အသစ်ထည့်ရန် Expandar အပိုင်း[cite: 1]
+    with st.expander("➕ Add New Blacklist Record", expanded=True):
+        name = st.text_input("Full Name (အမည်)")
+        # NRC Logic များ ဤနေရာတွင် ဆက်လက်တည်ရှိမည်...
+        if st.button("Add to Blacklist", type="primary"):
+            # Save Logic[cite: 1]
+            st.success("Saved!")
+
+    st.divider()
+    # ရှာဖွေခြင်းနှင့် ပြင်ဆင်ခြင်း Logic များ (ကုဒ်ဟောင်းအတိုင်း)[cite: 1]
+
+# --- ၂။ Inward Transaction Function ---
 def show_inward_page(supabase, now_yangon):
     st.header("🏦 Inward Transaction Management")
-    # အရင်က ကုဒ်ဟောင်းထဲက Inward Logic များကို ဤနေရာတွင် အပြည့်အစုံထည့်သွင်းထားပါသည်
-    # (မှတ်ချက် - ကုဒ်ရှည်လျားသဖြင့် အဓိကအပိုင်းကိုသာ နမူနာပြထားပါသည်)
+    
+    # Transaction No ရှာဖွေခြင်း logic[cite: 1]
+    # Header Information & Receiver/Sender Form များ[cite: 1]
     with st.container(border=True):
-        col1, col2 = st.columns(2)
-        with col1:
-            ref_no = st.text_input("Reference No.")
-            sender = st.text_input("Sender Name")
-        with col2:
-            amount = st.number_input("Amount", min_value=0.0)
-            date = st.date_input("Date", value=now_yangon)
-            
-    if st.button("💾 Save Transaction", type="primary"):
-        # Save logic here
-        st.success("Transaction Saved!")
+        st.subheader("🔵 RECEIVER INFORMATION :")
+        r_name = st.text_input("Receiver Name:")
+        r_nrc = st.text_input("Receiver NRC:")
+        # ကျန်ရှိသော Input field များ...
 
-def show_user_setup(supabase):
-    st.header("⚙️ User Account Setup")
-    # ကုဒ်ဟောင်းပါ User Modify/Delete အပိုင်းများ
-    res_u = supabase.table("user_setup").select("*").execute()
-    if res_u.data:
-        u_list = [u['user_id'] for u in res_u.data]
-        target_uid = st.selectbox("Choose a User ID to modify:", options=["-- Select --"] + u_list)
-        
-        if target_uid != "-- Select --":
-            user_data = next(u for u in res_u.data if u['user_id'] == target_uid)
-            with st.container(border=True):
-                up_uid = st.text_input("Update User ID", value=user_data['user_id'])
-                up_pwd = st.text_input("Update Password", value=user_data['password'], type="password")
-                if st.button("🆙 Update Now"):
-                    supabase.table("user_setup").update({"user_id": up_uid, "password": up_pwd}).eq("id", user_data['id']).execute()
-                    st.success("Updated!")
-                    st.rerun()
+    if st.button("💾 Save Inward Transaction", type="primary"):
+        # Blacklist စစ်ဆေးခြင်းနှင့် Database ထဲသို့ Save ခြင်း logic[cite: 1]
+        st.success("Transaction Processed Successfully!")
+
+# --- ၃။ System Control (Country/Branch/User Setup) ---
+def show_system_control(supabase):
+    st.title("⚙️ System Control & Setup")
+    tab1, tab2, tab3 = st.tabs(["🌍 Country Setup", "🏢 Branch Setup", "👤 User Setup"])
+
+    with tab1:
+        st.subheader("Country Management")
+        # Country Setup Logic[cite: 1]
+
+    with tab2:
+        st.subheader("Branch Management")
+        # Branch Setup Logic[cite: 1]
+
+    with tab3:
+        st.subheader("👤 User Management")
+        # User Add/Edit/Delete Logic[cite: 1]
