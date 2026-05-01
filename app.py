@@ -5,7 +5,7 @@ import time
 from supabase import create_client, Client
 import auth, functions
 
-st.set_page_config(page_title="Remittance Admin System", layout="wide")
+st.set_page_config(page_title="Remittance Admin", layout="wide")
 
 # Supabase Connect
 URL = st.secrets["SUPABASE_URL"]
@@ -29,14 +29,14 @@ if auth.check_login(supabase):
         now_yangon = datetime.now(yangon_tz)
         mm_ptr, intl_ptr = functions.show_dashboard_page(supabase, now_yangon)
         
-        # ရွေးချယ်ခဲ့သော နိုင်ငံ၏ Timezone ကိုယူခြင်း
+        # Timezone ID (ဥပမာ- Asia/Bangkok) ကိုယူခြင်း
         tz_id = st.session_state.get('target_tz', 'Asia/Yangon')
         try:
             target_tz = pytz.timezone(tz_id)
         except:
             target_tz = pytz.timezone('UTC')
 
-        # Live Update Loop
+        # Live Time Loop
         while True:
             t_mm = datetime.now(yangon_tz).strftime('%I:%M:%S %p')
             t_intl = datetime.now(target_tz).strftime('%I:%M:%S %p')
