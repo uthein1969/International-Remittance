@@ -1,5 +1,4 @@
 import streamlit as st
-import pandas as pd
 
 def check_login(supabase):
     if 'logged_in' not in st.session_state:
@@ -8,42 +7,45 @@ def check_login(supabase):
     if not st.session_state['logged_in']:
         st.title("🔐 Admin Login System")
         
-        # --- Database မှ Data များကို ဆွဲထုတ်ခြင်း ---
+        # Database မှ နိုင်ငံနှင့် Branch စာရင်းများကို တိုက်ရိုက်ဆွဲထုတ်ခြင်း
+        country_list = []
+        branch_list = []
+        tz_map = {}
+
         try:
-            countries_res = supabase.table("country_setup").select("country_name, remark").execute()
-            branches_res = supabase.table("branch_setup").select("branch_name").execute()
+            c_res = supabase.table("country_setup").select("country_name, remark").execute()
+            b_res = supabase.table("branch_setup").select("branch_name").execute()
             
-            country_list = [r['country_name'] for r in countries_res.data] if countries_res.data else []
-            tz_map = {r['country_name']: r['remark'] for r in countries_res.data} if countries_res.data else {}
-            branch_list = [r['branch_name'] for r in branches_res.data] if branches_res.data else []
+            if c_res.data:
+                country_list = [r['country_name'] for r in c_res.data]
+                tz_map = {r['country_name']: r['remark'] for r in c_res.data}
+            
+            if b_res.data:
+                branch_list = [r['branch_name'] for r in b_res.data]
         except Exception as e:
-            st.error(f"Data Connection Error: {e}")
-            country_list, branch_list, tz_map = [], [], {}
+            st.error(f"❌ Database Connection Error: {e}")
 
         with st.form("login_form"):
-            input_user = st.text_input("User ID")
-            input_pass = st.text_input("Password", type="password")
+            u_id = st.text_input("User ID")
+            u_pw = st.text_input("Password", type="password")
             
-            # ဒေတာရှိမှ selectbox ပြရန်၊ မရှိပါက Warning ပြရန်
-            sel_country = st.selectbox("Select Country", options=country_list if country_list else ["No Country Found"])
-            sel_branch = st.selectbox("Select Branch", options=branch_list if branch_list else ["No Branch Found"])
+            # Selectbox များတွင် Data မရှိပါက Warning ပြရန်
+            sel_c = st.selectbox("Select Country", options=country_list if country_list else ["No Country Found"])
+            sel_b = st.selectbox("Select Branch", options=branch_list if branch_list else ["No Branch Found"])
             
-            submit_btn = st.form_submit_button("Login", use_container_width=True)
-            
-            if submit_btn:
+            if st.form_submit_button("Login", use_container_width=True):
                 if not country_list or not branch_list:
-                    st.error("❌ Country သို့မဟုတ် Branch ဒေတာများ မရှိသေးပါ။")
+                    st.warning("⚠️ Database တွင် အချက်အလက်များ မရှိသေးပါ။")
                 else:
-                    res = supabase.table("user_setup").select("*").eq("user_id", input_user).eq("password", input_pass).execute()
-                    
+                    res = supabase.table("user_setup").select("*").eq("user_id", u_id).eq("password", u_pw).execute()
                     if res.data:
-                        st.session_state['logged_in'] = True
-                        st.session_state['user_id'] = input_user
-                        st.session_state['selected_country'] = sel_country
-                        st.session_state['selected_branch'] = sel_branch
-                        
-                        # Timezone ID (ဥပမာ- Asia/Bangkok) ကို Session မှာသိမ်းခြင်း
-                        st.session_state['target_tz'] = tz_map.get(sel_country, "Asia/Yangon")
+                        st.session_state.update({
+                            'logged_in': True,
+                            'user_id': u_id,
+                            'sel_country': sel_c,
+                            'sel_branch': sel_b,
+                            'target_tz': tz_map.get(sel_c, "Asia/Yangon")
+                        })
                         st.success("✅ Login Successful!")
                         st.rerun()
                     else:
