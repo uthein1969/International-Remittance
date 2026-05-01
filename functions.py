@@ -3,37 +3,22 @@ import pandas as pd
 import pytz
 from datetime import datetime
 
-# --- ၁။ Dashboard Page Function ---
 def show_dashboard_page(supabase, now_yangon):
     st.title("📈 Transaction Dashboard")
     
-    # ရန်ကုန်အချိန် Live ပြရန် Placeholder
-    st.subheader("🇲🇲 Myanmar Standard Time")
-    mm_time_ptr = st.empty()
-    st.divider()
-
-    # နိုင်ငံတကာအချိန်များအတွက် Placeholder များ
-    st.subheader("🌍 International Live Times")
-    country_placeholders = {}
+    # ရွေးချယ်ထားသော နိုင်ငံနှင့် Branch ကို ပြသခြင်း
+    st.sidebar.info(f"📍 Location: {st.session_state.get('selected_branch')} ({st.session_state.get('selected_country')})")
     
-    try:
-        # Country Setup မှ နိုင်ငံစာရင်းကို ယူသည်
-        countries_res = supabase.table("country_setup").select("country_name, remark").execute()
-        if countries_res.data:
-            cols = st.columns(len(countries_res.data))
-            for i, country in enumerate(countries_res.data):
-                with cols[i]:
-                    st.info(f"**{country['country_name']}**")
-                    # Remark ထဲမှာ 'Asia/Bangkok' စသဖြင့် Timezone ID ရှိရမည်
-                    country_placeholders[country['country_name']] = {
-                        "ptr": st.empty(),
-                        "tz": country['remark'] if country['remark'] else "UTC" 
-                    }
-    except Exception as e:
-        st.error(f"Country Load Error: {e}")
+    col1, col2 = st.columns(2)
+    with col1:
+        st.subheader("🇲🇲 Myanmar Time")
+        mm_ptr = st.empty()
+    with col2:
+        st.subheader(f"🌍 {st.session_state.get('selected_country')} Time")
+        intl_ptr = st.empty()
 
     st.divider()
-
+    
     # Inward Transaction Summing Logic
     try:
         res = supabase.table("inward_transactions").select("amount, created_at").execute()
