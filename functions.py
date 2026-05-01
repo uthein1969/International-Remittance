@@ -4,13 +4,13 @@ import pandas as pd
 def show_dashboard_page(supabase, now_yangon):
     st.title("📈 Transaction Dashboard")
     
-    # ရန်ကုန်အချိန်နှင့် ရွေးချယ်ထားသောနိုင်ငံ၏အချိန်အတွက် Placeholder များ
+    # ရွေးချယ်ခဲ့သော နိုင်ငံနှင့် မြန်မာအချိန်ပြရန် Placeholder များ
     col1, col2 = st.columns(2)
     with col1:
-        st.subheader("🇲🇲 Myanmar Time")
+        st.info("🇲🇲 Myanmar Time")
         mm_ptr = st.empty()
     with col2:
-        st.subheader(f"🌍 {st.session_state.get('sel_country')} Time")
+        st.success(f"🌍 {st.session_state.get('sel_country')} Time")
         intl_ptr = st.empty()
 
     st.divider()
@@ -31,20 +31,20 @@ def show_dashboard_page(supabase, now_yangon):
 
     st.subheader("📊 Inward Summary")
     c1, c2, c3 = st.columns(3)
-    c1.info(f"Daily Inward\n### {d_sum:,.2f}")
-    c2.warning(f"Monthly Inward\n### {m_sum:,.2f}")
-    c3.error(f"Yearly Inward\n### {y_sum:,.2f}")
+    c1.metric("Daily Inward", f"{d_sum:,.2f}")
+    c2.metric("Monthly Inward", f"{m_sum:,.2f}")
+    c3.metric("Yearly Inward", f"{y_sum:,.2f}")
 
     return mm_ptr, intl_ptr
 
 def show_blacklist_page(supabase):
     st.header("📜 Blacklist Management")
-    st.write("Blacklist information will be managed here.")
+    st.write("Manage your blacklist data here.")
 
 def show_inward_page(supabase, now_yangon):
     st.header("🏦 Inward Transactions")
-    st.write(f"Current Date: {now_yangon.strftime('%Y-%m-%d')}")
+    st.write(f"Date: {now_yangon.strftime('%Y-%m-%d')}")
 
 def show_system_control(supabase):
-    st.header("⚙️ System Settings")
+    st.header("⚙️ System Control")
     st.tabs(["Country Setup", "Branch Setup", "User Setup"])
