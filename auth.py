@@ -7,36 +7,38 @@ def check_login(supabase):
     if not st.session_state['logged_in']:
         st.title("🔐 Admin Login System")
         
-        # Database မှ နိုင်ငံနှင့် Branch စာရင်းများကို တိုက်ရိုက်ဆွဲထုတ်ခြင်း
+        # --- Database မှ Data များကို အသေအချာဆွဲထုတ်ခြင်း ---
         country_list = []
         branch_list = []
         tz_map = {}
 
         try:
+            # Country List ဆွဲထုတ်ခြင်း
             c_res = supabase.table("country_setup").select("country_name, remark").execute()
-            b_res = supabase.table("branch_setup").select("branch_name").execute()
-            
             if c_res.data:
-                country_list = [r['country_name'] for r in c_res.data]
-                tz_map = {r['country_name']: r['remark'] for r in c_res.data}
+                country_list = [str(r['country_name']) for r in c_res.data]
+                tz_map = {str(r['country_name']): str(r['remark']) for r in c_res.data}
             
+            # Branch List ဆွဲထုတ်ခြင်း
+            b_res = supabase.table("branch_setup").select("branch_name").execute()
             if b_res.data:
-                branch_list = [r['branch_name'] for r in b_res.data]
+                branch_list = [str(r['branch_name']) for r in b_res.data]
         except Exception as e:
-            st.error(f"❌ Database Connection Error: {e}")
+            st.error(f"⚠️ Connection Error: {e}")
 
         with st.form("login_form"):
             u_id = st.text_input("User ID")
             u_pw = st.text_input("Password", type="password")
             
-            # Selectbox များတွင် Data မရှိပါက Warning ပြရန်
-            sel_c = st.selectbox("Select Country", options=country_list if country_list else ["No Country Found"])
-            sel_b = st.selectbox("Select Branch", options=branch_list if branch_list else ["No Branch Found"])
+            # Data ရှိမှ Selectbox ပြမည်၊ မရှိလျှင် Empty List ပြမည်
+            sel_c = st.selectbox("Select Country", options=country_list if country_list else ["Loading..."])
+            sel_b = st.selectbox("Select Branch", options=branch_list if branch_list else ["Loading..."])
             
             if st.form_submit_button("Login", use_container_width=True):
-                if not country_list or not branch_list:
-                    st.warning("⚠️ Database တွင် အချက်အလက်များ မရှိသေးပါ။")
+                if not country_list or sel_c == "Loading...":
+                    st.warning("⚠️ Country/Branch data များ မတက်လာသေးပါ။ စက္ကန့်အနည်းငယ်စောင့်ပြီး Refresh လုပ်ပါ။")
                 else:
+                    # User Login စစ်ဆေးခြင်း
                     res = supabase.table("user_setup").select("*").eq("user_id", u_id).eq("password", u_pw).execute()
                     if res.data:
                         st.session_state.update({
