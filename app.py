@@ -3,8 +3,8 @@ import pytz
 from datetime import datetime
 import time
 from supabase import create_client, Client
-import auth
-import functions
+import auth       # auth.py
+import functions  # functions.py
 
 # --- Page Setup ---
 st.set_page_config(page_title="International Remittance", page_icon="🏦", layout="wide")
@@ -31,7 +31,7 @@ if auth.check_login(supabase):
 
     # --- Page Routing ---
     if menu == "🏠 Dashboard":
-        # Placeholder များကို functions.py မှ ယူသည်
+        # Line 35: functions.py မှ return ပြန်လာသော variable နှစ်ခုကို လက်ခံခြင်း[cite: 1]
         mm_ptr, c_ptrs = functions.show_dashboard_page(supabase, now_yangon)
         
         # Live Time Loop
