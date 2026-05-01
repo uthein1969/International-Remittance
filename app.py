@@ -5,9 +5,9 @@ import time
 from supabase import create_client, Client
 import auth, functions
 
-st.set_page_config(page_title="Remittance System", layout="wide")
+st.set_page_config(page_title="Remittance Admin System", layout="wide")
 
-# Supabase ချိတ်ဆက်မှု
+# Supabase Connect
 URL = st.secrets["SUPABASE_URL"]
 KEY = st.secrets["SUPABASE_KEY"]
 supabase = create_client(URL, KEY)
@@ -15,9 +15,9 @@ supabase = create_client(URL, KEY)
 yangon_tz = pytz.timezone('Asia/Yangon')
 
 if auth.check_login(supabase):
-    # Sidebar Info
+    # Sidebar ပြသခြင်း
     st.sidebar.markdown(f"👤 User: **{st.session_state.user_id}**")
-    st.sidebar.markdown(f"📍 **{st.session_state.sel_branch}**")
+    st.sidebar.markdown(f"📍 Branch: **{st.session_state.sel_branch}**")
     
     menu = st.sidebar.radio("Main Menu", ["📊 Dashboard", "📜 Blacklist Info", "🏦 Inward Transaction", "⚙️ System Control"])
     
@@ -29,14 +29,14 @@ if auth.check_login(supabase):
         now_yangon = datetime.now(yangon_tz)
         mm_ptr, intl_ptr = functions.show_dashboard_page(supabase, now_yangon)
         
-        # Live Time Loop
+        # ရွေးချယ်ခဲ့သော နိုင်ငံ၏ Timezone ကိုယူခြင်း
         tz_id = st.session_state.get('target_tz', 'Asia/Yangon')
-        # Remark ထဲမှာ Timezone ID မဟုတ်တာတွေပါနေရင် Error မတက်အောင် စစ်ဆေးခြင်း
         try:
             target_tz = pytz.timezone(tz_id)
         except:
             target_tz = pytz.timezone('UTC')
 
+        # Live Update Loop
         while True:
             t_mm = datetime.now(yangon_tz).strftime('%I:%M:%S %p')
             t_intl = datetime.now(target_tz).strftime('%I:%M:%S %p')
