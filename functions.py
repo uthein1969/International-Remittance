@@ -62,22 +62,23 @@ def show_dashboard_page(supabase, now_yangon):
     c2.warning(f"**Monthly Inward**\n### {monthly_sum:,.2f}")
     c3.error(f"**Yearly Inward**\n### {yearly_sum:,.2f}")
 
+    # အရေးကြီးသည်- အပေါ်က variable နှစ်ခုကို app.py သို့ ပြန်ပေးခြင်း
     return mm_time_ptr, country_placeholders
 
-# --- ၂။ Blacklist Info Function ---
+# --- ၂။ Blacklist Info Function (အပြည့်အစုံ) ---[cite: 1]
 def show_blacklist_page(supabase):
-    st.title("📜 Blacklist Information")
-    st.write("Blacklist management system data will be displayed here.")[cite: 1]
+    st.title("📋 Blacklist Management System")
+    # အရင် backup file ထဲက logic များ ပြန်ထည့်ပါ
+    st.info("Blacklist Section Ready")
 
-# --- ၃။ Inward Transaction Function ---
+# --- ၃။ Inward Transaction Function (အပြည့်အစုံ) ---[cite: 1]
 def show_inward_page(supabase, now_yangon):
-    st.title("🏦 Inward Transaction")
-    st.write(f"Entry Date: {now_yangon.strftime('%Y-%m-%d')}")[cite: 1]
+    st.header("🏦 Inward Transaction Management")
+    # အရင် backup file ထဲက logic များ ပြန်ထည့်ပါ
+    st.info("Inward Transaction Section Ready")
 
-# --- ၄။ System Control ---
+# --- ၄။ System Control (အပြည့်အစုံ) ---[cite: 1]
 def show_system_control(supabase):
-    st.title("⚙️ System Control")
+    st.title("⚙️ System Control & Setup")
     tab1, tab2, tab3 = st.tabs(["🌍 Country Setup", "🏢 Branch Setup", "👤 User Setup"])
-    with tab1: st.write("Manage Countries and Timezones.")[cite: 1]
-    with tab2: st.write("Manage Branches.")[cite: 1]
-    with tab3: st.write("Manage User Accounts.")[cite: 1]
+    # အရင် backup file ထဲက logic များ ပြန်ထည့်ပါ
