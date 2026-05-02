@@ -133,24 +133,27 @@ def edit_popup(supabase, row):
     new_name = st.text_input("Name", value=row['name'])
     new_rem = st.text_area("Remark", value=row['remark'])
     
-    if st.button("Update", type="primary"):
+    if st.button("Update Now", type="primary"):
         try:
-            # ၁။ Database ကို update လုပ်ခြင်း
-            response = supabase.table("blacklist").update({
+            # ၁။ Database Update လုပ်ခြင်း
+            res = supabase.table("blacklist").update({
                 "name": new_name, 
                 "remark": new_rem
             }).eq("srno", row['srno']).execute()
             
-            # ၂။ အောင်မြင်ကြောင်းပြသပြီး ခေတ္တစောင့်ရန်
-            st.success("Successfully Updated!")
-            time.sleep(1) # user မြင်သာစေရန် ၁ စက္ကန့် စောင့်ခြင်း
-            
-            # ၃။ Page ကို အတင်းအကျပ် Refresh လုပ်ခိုင်းခြင်း
-            st.rerun() 
-            
+            # ၂။ အောင်မြင်မှု ရှိမရှိ စစ်ဆေးခြင်း
+            if res.data:
+                st.success("✅ Database Updated Successfully!")
+                # ၃။ Cache များကို ဖျက်ပြီး Page ကို အသစ်ပြန်ပွင့်စေခြင်း
+                if hasattr(st, 'cache_data'):
+                    st.cache_data.clear()
+                time.sleep(1)
+                st.rerun()
+            else:
+                st.error("❌ Update failed: No data returned from server.")
+                
         except Exception as e:
-            st.error(f"Update Error: {e}")
-
+            st.error(f"⚠️ Error: {e}")
 @st.dialog("ပယ်ဖျက်ရန်")
 def delete_popup(supabase, row):
     st.write(f"**{row['name']}** ကို ဖျက်ရန် သေချာပါသလား?")
