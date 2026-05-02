@@ -44,135 +44,105 @@ import time
 def show_blacklist_page(supabase):
     st.title("📋 Blacklist Management")
     
-    # --- ၁။ NRC Data ကို Load လုပ်ခြင်း ---
+    # --- ၁။ NRC Data Load ---
     try:
         nrc_res = supabase.table("myanmar_nrc_data").select("state_no, short_en").execute()
         nrc_df = pd.DataFrame(nrc_res.data) if nrc_res.data else pd.DataFrame(columns=["state_no", "short_en"])
-        if not nrc_df.empty:
-            nrc_df['state_no'] = nrc_df['state_no'].astype(str).str.strip()
-            nrc_df['short_en'] = nrc_df['short_en'].astype(str).str.strip()
     except Exception as e:
         st.error(f"NRC Data Load Error: {e}")
         nrc_df = pd.DataFrame(columns=["state_no", "short_en"])
 
-    # --- ၂။ Form Reset Logic (Session State) ---
-    if 'name_input' not in st.session_state: st.session_state.name_input = ""
-    if 'nrc_num_input' not in st.session_state: st.session_state.nrc_num_input = ""
-    if 'remark_input' not in st.session_state: st.session_state.remark_input = ""
-
-    # --- ၃။ Add New Blacklist Record ---
-    with st.expander("➕ Add New Blacklist Record", expanded=False):
-        name = st.text_input("Full Name (အမည်)", key="name_input")
+    # --- ၂။ Add New Blacklist Record ---
+    with st.expander("➕ Add New Blacklist Record", expanded=True):
+        name = st.text_input("Full Name (အမည်)", key="name_box")
         
         st.write("🆔 NRC Number (New Format)")
         c1, c2, c3, c4 = st.columns([1, 1.5, 1, 2])
         
         with c1:
-            all_states = sorted(nrc_df['state_no'].unique().tolist(), key=lambda x: int(x) if x.isdigit() else 99)
-            selected_state = st.selectbox("State No", all_states, key="st_key")
+            all_states = sorted(nrc_df['state_no'].unique().tolist(), key=lambda x: int(x) if str(x).isdigit() else 99) if not nrc_df.empty else ["-"]
+            selected_state = st.selectbox("State No", all_states)
         with c2:
-            filtered_tsps = nrc_df[nrc_df['state_no'] == selected_state]['short_en'].unique().tolist()
-            selected_tsp = st.selectbox("Township", sorted(filtered_tsps) if filtered_tsps else ["No Data"], key="tsp_key")
+            filtered_tsps = nrc_df[nrc_df['state_no'] == selected_state]['short_en'].unique().tolist() if not nrc_df.empty else []
+            selected_tsp = st.selectbox("Township", sorted(filtered_tsps) if filtered_tsps else ["No Data"])
         with c3:
-            nrc_type = st.selectbox("Type", ["(N)", "(E)", "(P)", "(A)"], key="type_key")
+            nrc_type = st.selectbox("Type", ["(N)", "(E)", "(P)", "(A)"])
         with c4:
-            nrc_num = st.text_input("Number", max_chars=6, key="nrc_num_input")
+            nrc_num = st.text_input("Number", max_chars=6)
 
-        reason = st.text_area("Reason for Blacklisting", key="remark_input")
+        reason = st.text_area("Reason for Blacklisting")
         
         if st.button("Add to Blacklist", type="primary", use_container_width=True):
             if name and nrc_num and selected_tsp != "No Data":
                 full_nrc = f"{selected_state}/{selected_tsp}{nrc_type}{nrc_num}"
-                
                 try:
                     # Duplicate Check
                     check_exists = supabase.table("blacklist").select("nrcno").eq("nrcno", full_nrc).execute()
                     if check_exists.data:
-                        st.error(f"❌ '{full_nrc}' သည် Database ထဲတွင် ရှိနှင့်ပြီးသားဖြစ်ပါသည်")
+                        st.error(f"❌ '{full_nrc}' သည် ရှိပြီးသားဖြစ်သည်")
                     else:
+                        # srno သည် auto-increment ဖြစ်သောကြောင့် ထည့်ပေးရန်မလိုပါ
                         supabase.table("blacklist").insert({
                             "name": name, "nrcno": full_nrc, "remark": reason
                         }).execute()
-                        
                         st.success("✅ Saved Successfully!")
-                        # Form Clear
-                        st.session_state.name_input = ""
-                        st.session_state.nrc_num_input = ""
-                        st.session_state.remark_input = ""
                         time.sleep(1)
                         st.rerun()
                 except Exception as e:
                     st.error(f"Save Error: {e}")
             else:
-                st.warning("⚠️ ကျေးဇူးပြု၍ အချက်အလက်များ ပြည့်စုံစွာ ဖြည့်စွက်ပေးပါ။")
+                st.warning("⚠️ အချက်အလက်များ ပြည့်စုံစွာ ဖြည့်ပေးပါ")
 
     st.divider()
 
-    # --- ၄။ Search & Edit/Delete Section ---
+    # --- ၃။ Search & Manage Section (srno ကို အသုံးပြုခြင်း) ---
     st.subheader("🛠️ Search & Manage Blacklist")
-    
-    search_query = st.text_input("🔍 Search by Name or NRC Number", placeholder="အမည် (သို့) NRC ဖြင့် ရှာဖွေပါ...")
+    search_query = st.text_input("🔍 Search by Name or NRC Number")
     
     try:
-        # Database မှ data အားလုံးဆွဲထုတ်ခြင်း (Search query ရှိလျှင် filter လုပ်မည်)
+        # id အစား srno ကို သုံးထားပါသည်
+        query = supabase.table("blacklist").select("srno, name, nrcno, remark")
+        
         if search_query:
-            bl_res = supabase.table("blacklist").select("*").or_(f"name.ilike.%{search_query}%,nrcno.ilike.%{search_query}%").execute()
+            bl_res = query.or_(f"name.ilike.%{search_query}%,nrcno.ilike.%{search_query}%").execute()
         else:
-            bl_res = supabase.table("blacklist").select("*").order("id", desc=True).limit(20).execute()
+            bl_res = query.order("srno", desc=True).limit(10).execute()
         
         if bl_res.data:
-            df_display = pd.DataFrame(bl_res.data)
-            
-            # Table ပြသခြင်း
-            for index, row in df_display.iterrows():
+            df = pd.DataFrame(bl_res.data)
+            for _, row in df.iterrows():
                 with st.container():
                     col_info, col_edit, col_del = st.columns([6, 1, 1])
-                    with col_info:
-                        st.markdown(f"**Name:** {row['name']} | **NRC:** `{row['nrcno']}`")
-                        st.caption(f"Reason: {row['remark']}")
+                    col_info.write(f"**{row['name']}** - `{row['nrcno']}`")
+                    col_info.caption(f"Note: {row['remark']}")
                     
-                    # Edit Functionality
-                    with col_edit:
-                        if st.button("✏️", key=f"edit_{row['id']}"):
-                            edit_record(supabase, row)
-                    
-                    # Delete Functionality
-                    with col_del:
-                        if st.button("🗑️", key=f"del_{row['id']}"):
-                            delete_record(supabase, row['id'], row['name'])
+                    # srno ကို key အဖြစ် အသုံးပြုထားပါသည်
+                    if col_edit.button("✏️", key=f"ed_{row['srno']}"):
+                        edit_popup(supabase, row)
+                    if col_del.button("🗑️", key=f"dl_{row['srno']}"):
+                        delete_popup(supabase, row)
                     st.divider()
         else:
             st.info("ရှာဖွေမှုရလဒ် မရှိပါ။")
     except Exception as e:
         st.error(f"Data Fetch Error: {e}")
 
-# --- Edit Record Modal (Helper Function) ---
-@st.dialog("Edit Blacklist Record")
-def edit_record(supabase, row):
+@st.dialog("ပြင်ဆင်ရန်")
+def edit_popup(supabase, row):
     new_name = st.text_input("Name", value=row['name'])
-    new_remark = st.text_area("Remark", value=row['remark'])
-    if st.button("Update Record"):
-        try:
-            supabase.table("blacklist").update({"name": new_name, "remark": new_remark}).eq("id", row['id']).execute()
-            st.success("Updated!")
-            time.sleep(1)
-            st.rerun()
-        except Exception as e:
-            st.error(f"Update Error: {e}")
+    new_rem = st.text_area("Remark", value=row['remark'])
+    if st.button("Update"):
+        # srno ဖြင့် filter လုပ်ပြီး update လုပ်ပါသည်
+        supabase.table("blacklist").update({"name": new_name, "remark": new_rem}).eq("srno", row['srno']).execute()
+        st.rerun()
 
-# --- Delete Record Modal (Helper Function) ---
-@st.dialog("Confirm Delete")
-def delete_record(supabase, record_id, name):
-    st.warning(f"⚠️ '{name}' ကို Blacklist မှ ပယ်ဖျက်ရန် သေချာပါသလား?")
-    if st.button("Yes, Delete it"):
-        try:
-            supabase.table("blacklist").delete().eq("id", record_id).execute()
-            st.success("Deleted!")
-            time.sleep(1)
-            st.rerun()
-        except Exception as e:
-            st.error(f"Delete Error: {e}")
-
+@st.dialog("ပယ်ဖျက်ရန်")
+def delete_popup(supabase, row):
+    st.write(f"**{row['name']}** ကို ဖျက်ရန် သေချာပါသလား?")
+    if st.button("Confirm Delete"):
+        # srno ဖြင့် filter လုပ်ပြီး delete လုပ်ပါသည်
+        supabase.table("blacklist").delete().eq("srno", row['srno']).execute()
+        st.rerun()
 def show_inward_page(supabase, now_yangon):
     st.header("🏦 Inward Transaction")
 
