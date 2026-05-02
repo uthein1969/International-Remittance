@@ -156,26 +156,25 @@ def edit_popup(supabase, row):
             st.error(f"⚠️ Error: {e}")
 @st.dialog("ပယ်ဖျက်ရန်")
 def delete_popup(supabase, row):
-    # row['name'] ကို အသုံးပြုပြီး မေးခွန်းမေးခြင်း
     st.warning(f"⚠️ **{row['name']}** ကို Blacklist ထဲမှ ဖျက်ရန် သေချာပါသလား?")
     
-    # Confirm Delete button ကို နှိပ်မှ အလုပ်လုပ်စေရန်
     if st.button("Confirm Delete", type="primary", use_container_width=True):
         try:
-            # ၁။ Database မှ srno ကို အခြေခံ၍ ဖျက်ခြင်း
-            supabase.table("blacklist").delete().eq("srno", row['srno']).execute()
+            # ၁။ Database မှ အမှန်တကယ် ဖျက်ခြင်းကို စစ်ဆေးရန် .execute() ရလဒ်ကို ယူပါ
+            res = supabase.table("blacklist").delete().eq("srno", row['srno']).execute()
             
-            # ၂။ အောင်မြင်ကြောင်းပြသခြင်း
-            st.success("Successfully Deleted!")
-            time.sleep(1) # user မြင်ရအောင် ခေတ္တစောင့်ခြင်း
-            
-            # ၃။ Page ကို Refresh လုပ်ပြီး dialog ကို ပိတ်စေခြင်း
-            st.rerun()
-            
+            # ၂။ ဖျက်ပြီးကြောင်း သေချာပါက (data ပြန်မရတော့ပါက) refresh လုပ်ပါ
+            if res.data or res.count is None: # Supabase အောင်မြင်စွာ ဖျက်ပြီးလျှင်
+                st.success("Successfully Deleted from Database!")
+                time.sleep(1)
+                
+                # ၃။ Session State ထဲရှိ data ဟောင်းများကို clear ဖြစ်စေရန် rerun လုပ်ပါ
+                st.rerun()
+            else:
+                st.error("Delete failed: No record found in database.")
+                
         except Exception as e:
-            st.error(f"Delete Error: {e}")
-def show_inward_page(supabase, now_yangon):
-    st.header("🏦 Inward Transaction")
+            st.error(f"Delete Error: {e}")    st.header("🏦 Inward Transaction")
 
 def show_system_control(supabase):
     st.header("⚙️ System Control")
