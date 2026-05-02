@@ -76,12 +76,10 @@ def show_blacklist_page(supabase):
             if name and nrc_num and selected_tsp != "No Data":
                 full_nrc = f"{selected_state}/{selected_tsp}{nrc_type}{nrc_num}"
                 try:
-                    # Duplicate Check
                     check_exists = supabase.table("blacklist").select("nrcno").eq("nrcno", full_nrc).execute()
                     if check_exists.data:
                         st.error(f"❌ '{full_nrc}' သည် ရှိပြီးသားဖြစ်သည်")
                     else:
-                        # srno သည် auto-increment ဖြစ်သောကြောင့် ထည့်ပေးရန်မလိုပါ
                         supabase.table("blacklist").insert({
                             "name": name, "nrcno": full_nrc, "remark": reason
                         }).execute()
@@ -95,14 +93,12 @@ def show_blacklist_page(supabase):
 
     st.divider()
 
-    # --- ၃။ Search & Manage Section (srno ကို အသုံးပြုခြင်း) ---
+    # --- ၃။ Search & Manage Section ---
     st.subheader("🛠️ Search & Manage Blacklist")
     search_query = st.text_input("🔍 Search by Name or NRC Number")
     
     try:
-        # id အစား srno ကို သုံးထားပါသည်
         query = supabase.table("blacklist").select("srno, name, nrcno, remark")
-        
         if search_query:
             bl_res = query.or_(f"name.ilike.%{search_query}%,nrcno.ilike.%{search_query}%").execute()
         else:
@@ -116,7 +112,6 @@ def show_blacklist_page(supabase):
                     col_info.write(f"**{row['name']}** - `{row['nrcno']}`")
                     col_info.caption(f"Note: {row['remark']}")
                     
-                    # srno ကို key အဖြစ် အသုံးပြုထားပါသည်
                     if col_edit.button("✏️", key=f"ed_{row['srno']}"):
                         edit_popup(supabase, row)
                     if col_del.button("🗑️", key=f"dl_{row['srno']}"):
@@ -127,54 +122,36 @@ def show_blacklist_page(supabase):
     except Exception as e:
         st.error(f"Data Fetch Error: {e}")
 
+# --- DIALOG FUNCTIONS (Function အပြင်ဘက်တွင် သီးခြားရှိရပါမည်) ---
+
 @st.dialog("ပြင်ဆင်ရန်")
 def edit_popup(supabase, row):
-    # row['name'] နှင့် row['remark'] တို့ကို default value အဖြစ် သုံးထားပါသည်
     new_name = st.text_input("Name", value=row['name'])
     new_rem = st.text_area("Remark", value=row['remark'])
-    
-    if st.button("Update Now", type="primary"):
+    if st.button("Update", type="primary"):
         try:
-            # ၁။ Database Update လုပ်ခြင်း
-            res = supabase.table("blacklist").update({
-                "name": new_name, 
-                "remark": new_rem
-            }).eq("srno", row['srno']).execute()
-            
-            # ၂။ အောင်မြင်မှု ရှိမရှိ စစ်ဆေးခြင်း
-            if res.data:
-                st.success("✅ Database Updated Successfully!")
-                # ၃။ Cache များကို ဖျက်ပြီး Page ကို အသစ်ပြန်ပွင့်စေခြင်း
-                if hasattr(st, 'cache_data'):
-                    st.cache_data.clear()
-                time.sleep(1)
-                st.rerun()
-            else:
-                st.error("❌ Update failed: No data returned from server.")
-                
+            supabase.table("blacklist").update({"name": new_name, "remark": new_rem}).eq("srno", row['srno']).execute()
+            st.success("Updated!")
+            time.sleep(1)
+            st.rerun()
         except Exception as e:
-            st.error(f"⚠️ Error: {e}")
+            st.error(f"Update Error: {e}")
+
 @st.dialog("ပယ်ဖျက်ရန်")
 def delete_popup(supabase, row):
-    st.warning(f"⚠️ **{row['name']}** ကို Blacklist ထဲမှ ဖျက်ရန် သေချာပါသလား?")
-    
-    if st.button("Confirm Delete", type="primary", use_container_width=True):
+    st.warning(f"⚠️ **{row['name']}** ကို ဖျက်ရန် သေချာပါသလား?")
+    if st.button("Confirm Delete", type="primary"):
         try:
-            # ၁။ Database မှ အမှန်တကယ် ဖျက်ခြင်းကို စစ်ဆေးရန် .execute() ရလဒ်ကို ယူပါ
-            res = supabase.table("blacklist").delete().eq("srno", row['srno']).execute()
-            
-            # ၂။ ဖျက်ပြီးကြောင်း သေချာပါက (data ပြန်မရတော့ပါက) refresh လုပ်ပါ
-            if res.data or res.count is None: # Supabase အောင်မြင်စွာ ဖျက်ပြီးလျှင်
-                st.success("Successfully Deleted from Database!")
-                time.sleep(1)
-                
-                # ၃။ Session State ထဲရှိ data ဟောင်းများကို clear ဖြစ်စေရန် rerun လုပ်ပါ
-                st.rerun()
-            else:
-                st.error("Delete failed: No record found in database.")
-                
+            # Delete logic ကို ဤနေရာတွင် တိုက်ရိုက်ခေါ်ခြင်း
+            supabase.table("blacklist").delete().eq("srno", row['srno']).execute()
+            st.success("Deleted!")
+            time.sleep(1)
+            st.rerun()
         except Exception as e:
-            st.error(f"Delete Error: {e}")    st.header("🏦 Inward Transaction")
+            st.error(f"Delete Error: {e}")    
+
+def show_system_control(supabase):
+    st.header("🏦 Inward Transaction")
 
 def show_system_control(supabase):
     st.header("⚙️ System Control")
