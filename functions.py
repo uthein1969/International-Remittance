@@ -156,11 +156,24 @@ def edit_popup(supabase, row):
             st.error(f"⚠️ Error: {e}")
 @st.dialog("ပယ်ဖျက်ရန်")
 def delete_popup(supabase, row):
-    st.write(f"**{row['name']}** ကို ဖျက်ရန် သေချာပါသလား?")
-    if st.button("Confirm Delete"):
-        # srno ဖြင့် filter လုပ်ပြီး delete လုပ်ပါသည်
-        supabase.table("blacklist").delete().eq("srno", row['srno']).execute()
-        st.rerun()
+    # row['name'] ကို အသုံးပြုပြီး မေးခွန်းမေးခြင်း
+    st.warning(f"⚠️ **{row['name']}** ကို Blacklist ထဲမှ ဖျက်ရန် သေချာပါသလား?")
+    
+    # Confirm Delete button ကို နှိပ်မှ အလုပ်လုပ်စေရန်
+    if st.button("Confirm Delete", type="primary", use_container_width=True):
+        try:
+            # ၁။ Database မှ srno ကို အခြေခံ၍ ဖျက်ခြင်း
+            supabase.table("blacklist").delete().eq("srno", row['srno']).execute()
+            
+            # ၂။ အောင်မြင်ကြောင်းပြသခြင်း
+            st.success("Successfully Deleted!")
+            time.sleep(1) # user မြင်ရအောင် ခေတ္တစောင့်ခြင်း
+            
+            # ၃။ Page ကို Refresh လုပ်ပြီး dialog ကို ပိတ်စေခြင်း
+            st.rerun()
+            
+        except Exception as e:
+            st.error(f"Delete Error: {e}")
 def show_inward_page(supabase, now_yangon):
     st.header("🏦 Inward Transaction")
 
