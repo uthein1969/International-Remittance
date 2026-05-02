@@ -129,12 +129,27 @@ def show_blacklist_page(supabase):
 
 @st.dialog("ပြင်ဆင်ရန်")
 def edit_popup(supabase, row):
+    # row['name'] နှင့် row['remark'] တို့ကို default value အဖြစ် သုံးထားပါသည်
     new_name = st.text_input("Name", value=row['name'])
     new_rem = st.text_area("Remark", value=row['remark'])
-    if st.button("Update"):
-        # srno ဖြင့် filter လုပ်ပြီး update လုပ်ပါသည်
-        supabase.table("blacklist").update({"name": new_name, "remark": new_rem}).eq("srno", row['srno']).execute()
-        st.rerun()
+    
+    if st.button("Update", type="primary"):
+        try:
+            # ၁။ Database ကို update လုပ်ခြင်း
+            response = supabase.table("blacklist").update({
+                "name": new_name, 
+                "remark": new_rem
+            }).eq("srno", row['srno']).execute()
+            
+            # ၂။ အောင်မြင်ကြောင်းပြသပြီး ခေတ္တစောင့်ရန်
+            st.success("Successfully Updated!")
+            time.sleep(1) # user မြင်သာစေရန် ၁ စက္ကန့် စောင့်ခြင်း
+            
+            # ၃။ Page ကို အတင်းအကျပ် Refresh လုပ်ခိုင်းခြင်း
+            st.rerun() 
+            
+        except Exception as e:
+            st.error(f"Update Error: {e}")
 
 @st.dialog("ပယ်ဖျက်ရန်")
 def delete_popup(supabase, row):
