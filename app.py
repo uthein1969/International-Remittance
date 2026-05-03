@@ -16,26 +16,29 @@ with st.sidebar:
         st.session_state.logged_in = False
         st.rerun()
 
-# --- Page Sync Logic (ဇယားများ ထပ်မနေစေရန်) ---
+# --- Page Sync Logic (ဇယားများ Dashboard တွင် ထပ်မနေစေရန်) ---
 if 'current_page' not in st.session_state:
     st.session_state.current_page = menu
 
 if st.session_state.current_page != menu:
     st.session_state.current_page = menu
-    st.rerun() # Menu ပြောင်းတိုင်း အဟောင်းတွေကို ရှင်းပစ်သည်
+    st.rerun() # Menu ပြောင်းတိုင်း အကုန် Clear လုပ်ပေးပါသည်
 
-# --- Database Connection Fix (AttributeError ကို ဖြေရှင်းခြင်း) ---
+# --- Database Connection Fix (AttributeError ဖြေရှင်းချက်) ---
 try:
-    # auth.py ထဲရှိ function နာမည်ကို စစ်ဆေးပြီး ချိတ်ဆက်ခြင်း
+    # auth.py ထဲတွင် init_supabase သို့မဟုတ် init_connection ရှိမရှိ စစ်ဆေးခြင်း
     if hasattr(auth, 'init_supabase'):
         supabase = auth.init_supabase()
-    else:
+    elif hasattr(auth, 'init_connection'):
         supabase = auth.init_connection()
+    else:
+        st.error("Error: auth.py ထဲတွင် connection function ရှာမတွေ့ပါ။")
+        st.stop()
 except Exception as e:
     st.error(f"Database Connection Error: {e}")
     st.stop()
 
-# --- Content Display ---
+# --- Content Area ---
 if menu == "📊 Dashboard":
     now_yangon = datetime.now(yangon_tz)
     functions.show_dashboard_page(supabase, now_yangon)
