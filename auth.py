@@ -1,13 +1,13 @@
 import streamlit as st
 from supabase import create_client, Client
 
-# --- ၁။ Database Connection တည်ဆောက်ခြင်း (ဒါကို app.py မှ လှမ်းခေါ်ပါမည်) ---
+# Database Connection တည်ဆောက်ခြင်း
 def init_connection():
     url = st.secrets["supabase_url"]
     key = st.secrets["supabase_key"]
     return create_client(url, key)
 
-# --- ၂။ Login Check Logic ---
+# Login Check Logic
 def check_login(supabase):
     if 'logged_in' not in st.session_state:
         st.session_state['logged_in'] = False
@@ -44,7 +44,6 @@ def check_login(supabase):
             sel_b = st.selectbox("Select Branch", options=branch_list)
             
             if st.form_submit_button("Login", use_container_width=True):
-                # User verification (user_setup table ကို စစ်ဆေးခြင်း)
                 res = supabase.table("user_setup").select("*").eq("user_id", u_id).eq("password", u_pw).execute()
                 if res.data:
                     st.session_state.update({
