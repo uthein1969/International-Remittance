@@ -40,7 +40,7 @@ if auth.check_login(supabase):
 
     # --- Content Display ---
     if menu == "📊 Dashboard":
-        functions.show_dashboard_page(supabase, datetime.now(target_tz))
+        functions.show_dashboard_page(supabase, st.session_state.user)
 
     elif menu == "📋 Blacklist Info":
         functions.show_blacklist_page(supabase)
