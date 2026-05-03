@@ -1,5 +1,13 @@
 import streamlit as st
+from supabase import create_client, Client
 
+# --- ၁။ Database Connection တည်ဆောက်ခြင်း (ဒါကို app.py မှ လှမ်းခေါ်ပါမည်) ---
+def init_connection():
+    url = st.secrets["supabase_url"]
+    key = st.secrets["supabase_key"]
+    return create_client(url, key)
+
+# --- ၂။ Login Check Logic ---
 def check_login(supabase):
     if 'logged_in' not in st.session_state:
         st.session_state['logged_in'] = False
@@ -7,7 +15,6 @@ def check_login(supabase):
     if not st.session_state['logged_in']:
         st.title("🔐 Admin Login System")
         
-        # --- Database မှ Data များကို ကြိုတင်ပြင်ဆင်ခြင်း ---
         country_list = []
         branch_list = []
         tz_map = {}
@@ -26,20 +33,18 @@ def check_login(supabase):
         except Exception as e:
             st.error(f"⚠️ Connection Error: {e}")
 
-        # အကယ်၍ data လုံးဝမတက်လာပါက ပိုမိုရှင်းလင်းသော error ပြရန်
         if not country_list or not branch_list:
-            st.error("❌ Database ထဲတွင် Country သို့မဟုတ် Branch ဒေတာများ မရှိသေးပါ။ (သို့မဟုတ်) RLS Policy ကြောင့် ဖတ်၍မရဖြစ်နေပါသည်။")
+            st.error("❌ Database ထဲတွင် Country သို့မဟုတ် Branch ဒေတာများ မရှိသေးပါ။")
             return False
 
         with st.form("login_form"):
             u_id = st.text_input("User ID")
             u_pw = st.text_input("Password", type="password")
-            
             sel_c = st.selectbox("Select Country", options=country_list)
             sel_b = st.selectbox("Select Branch", options=branch_list)
             
             if st.form_submit_button("Login", use_container_width=True):
-                # User verification
+                # User verification (user_setup table ကို စစ်ဆေးခြင်း)
                 res = supabase.table("user_setup").select("*").eq("user_id", u_id).eq("password", u_pw).execute()
                 if res.data:
                     st.session_state.update({
