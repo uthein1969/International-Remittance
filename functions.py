@@ -91,38 +91,38 @@ def delete_popup(supabase, row):
         st.rerun()
 
 def show_dashboard_page(supabase, user_info):
-    # User ရဲ့ နိုင်ငံအလိုက် Timezone သတ်မှတ်ခြင်း
-    country = user_info.get('country', 'Thailand') # Default ကို Thailand ဟု ထားပါသည်
+    # ၁။ User ရဲ့ နိုင်ငံအချက်အလက်ကို ယူပြီး Timezone သတ်မှတ်ခြင်း
+    country = user_info.get('country', 'Thailand') 
     tz_dict = {
         "Thailand": "Asia/Bangkok",
         "Singapore": "Asia/Singapore",
         "Myanmar": "Asia/Yangon",
-        "Malaysia": "Asia/Kuala Lumpur"
+        "Malaysia": "Asia/Kuala_Lumpur"
     }
     
     selected_tz = tz_dict.get(country, "Asia/Bangkok")
     local_now = datetime.now(pytz.timezone(selected_tz))
 
-    # Title နှင့် Live Time ကို Info Box ဖြင့်ပြခြင်း
+    # ၂။ Dashboard Title နှင့် Live Time Display
     st.title(f"📊 {country} Branch Dashboard")
-    
-    # 🕒 Live Time Display
     st.info(f"📍 Location: {country} | 🕒 Current Live Time: {local_now.strftime('%I:%M:%S %p')} ({country} Time)")
 
     try:
-        # --- Inward Transaction Data ဆွဲထုတ်ခြင်း ---
+        # --- Database မှ Transaction Data များ ဆွဲထုတ်ခြင်း ---
+        # (Table အမည် 'inward_transactions' ဖြစ်ရပါမည်)
         res = supabase.table("inward_transactions").select("*").execute()
         df = pd.DataFrame(res.data) if res.data else pd.DataFrame()
 
         if not df.empty:
+            # created_at ကို datetime format သို့ပြောင်းခြင်း
             df['created_at'] = pd.to_datetime(df['created_at'])
             
-            # Daily, Monthly, Yearly တွက်ချက်ခြင်း
+            # ၃။ Daily, Monthly, Yearly Total များ တွက်ချက်ခြင်း
             today_total = df[df['created_at'].dt.date == local_now.date()]['amount'].sum()
             month_total = df[(df['created_at'].dt.month == local_now.month) & (df['created_at'].dt.year == local_now.year)]['amount'].sum()
             year_total = df[df['created_at'].dt.year == local_now.year]['amount'].sum()
 
-            # --- Metrics ပြသခြင်း ---
+            # --- Summary Metrics (Card) များဖြင့် ပြသခြင်း ---
             c1, c2, c3 = st.columns(3)
             with c1:
                 st.metric(label="📅 Daily Total", value=f"{today_total:,.2f} MMK")
@@ -133,22 +133,24 @@ def show_dashboard_page(supabase, user_info):
 
             st.divider()
 
-            # --- Charts ပြသခြင်း ---
-            st.subheader("📈 Inward Transaction Analysis")
-            tab1, tab2 = st.tabs(["Monthly Summary", "Daily Trends"])
+            # --- Chart (ဇယား) များ ပြသခြင်း ---
+            st.subheader("📈 Inward Transaction Trends")
+            tab1, tab2 = st.tabs(["Monthly Overview", "Daily Detail"])
             
             with tab1:
+                # Monthly Chart (လအလိုက် စုစုပေါင်း)
                 m_chart = df.groupby(df['created_at'].dt.strftime('%b'))['amount'].sum()
                 st.bar_chart(m_chart)
                 
             with tab2:
+                # Daily Chart (နေ့အလိုက် လိုင်းဇယား)
                 d_chart = df.groupby(df['created_at'].dt.date)['amount'].sum()
                 st.line_chart(d_chart)
         else:
-            st.warning("ပြသရန် Transaction ဒေတာ မရှိသေးပါ။")
+            st.warning("⚠️ ပြသရန် Transaction Data မရှိသေးပါ။")
 
     except Exception as e:
-        st.error(f"Dashboard Error: {e}")
+        st.error(f"❌ Dashboard Error: {e}")
 def show_inward_page(supabase, now):
     st.header("🏦 Inward Transaction")
 
