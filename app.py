@@ -26,6 +26,7 @@ if auth.check_login(supabase):
         st.rerun()
 
     if menu == "📊 Dashboard":
+        st.empty()
         now_yangon = datetime.now(yangon_tz)
         mm_ptr, intl_ptr = functions.show_dashboard_page(supabase, now_yangon)
         
@@ -46,8 +47,11 @@ if auth.check_login(supabase):
             time.sleep(1)
             
     elif menu == "📜 Blacklist Info":
+        st.empty()
         functions.show_blacklist_page(supabase)
     elif menu == "🏦 Inward Transaction":
+        st.empty()
         functions.show_inward_page(supabase, datetime.now(yangon_tz))
     elif menu == "⚙️ System Control":
+        st.empty()
         functions.show_system_control(supabase)
