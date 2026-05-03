@@ -5,7 +5,7 @@ import time
 def show_blacklist_page(supabase):
     st.title("📋 Blacklist Management")
     
-    # --- ၁။ Add New Section ---
+    # --- ၁။ အသစ်ထည့်သွင်းခြင်း ---
     with st.expander("➕ Add New Blacklist Record", expanded=True):
         try:
             nrc_res = supabase.table("myanmar_nrc_data").select("state_no, short_en").execute()
@@ -13,42 +13,39 @@ def show_blacklist_page(supabase):
         except:
             nrc_df = pd.DataFrame(columns=["state_no", "short_en"])
 
-        name = st.text_input("Full Name (အမည်)", key="bl_name_input")
+        name = st.text_input("Full Name (အမည်)", key="input_name")
         
         st.write("🆔 NRC Number")
         c1, c2, c3, c4 = st.columns([1, 1.5, 1, 2])
         with c1:
             states = sorted(nrc_df['state_no'].unique().tolist()) if not nrc_df.empty else ["-"]
-            s_state = st.selectbox("State", states, key="bl_state")
+            s_state = st.selectbox("State", states, key="sel_state")
         with c2:
             tsps = nrc_df[nrc_df['state_no'] == s_state]['short_en'].unique().tolist() if not nrc_df.empty else []
-            s_tsp = st.selectbox("Township", sorted(tsps) if tsps else ["-"], key="bl_tsp")
+            s_tsp = st.selectbox("Township", sorted(tsps) if tsps else ["-"], key="sel_tsp")
         with c3:
-            s_type = st.selectbox("Type", ["(N)", "(E)", "(P)", "(A)"], key="bl_type")
+            s_type = st.selectbox("Type", ["(N)", "(E)", "(P)", "(A)"], key="sel_type")
         with c4:
-            s_num = st.text_input("Number", max_chars=6, key="bl_num")
+            s_num = st.text_input("Number", max_chars=6, key="input_num")
 
-        reason = st.text_area("Reason", key="bl_reason")
+        reason = st.text_area("Reason", key="input_reason")
         
         if st.button("Add to Blacklist", type="primary", use_container_width=True):
             if name and s_num:
                 full_nrc = f"{s_state}/{s_tsp}{s_type}{s_num}"
-                try:
-                    supabase.table("blacklist").insert({"name": name, "nrcno": full_nrc, "remark": reason}).execute()
-                    st.success("✅ Saved Successfully!")
-                    time.sleep(1)
-                    st.rerun()
-                except Exception as e:
-                    st.error(f"Error: {e}")
+                supabase.table("blacklist").insert({"name": name, "nrcno": full_nrc, "remark": reason}).execute()
+                st.success("✅ Saved!")
+                time.sleep(1)
+                st.rerun()
 
     st.divider()
 
-    # --- ၂။ Search & Manage (ဇယားများ Dashboard တွင် မပေါ်စေရန် container သုံးခြင်း) ---
+    # --- ၂။ ရှာဖွေခြင်းနှင့် စီမံခြင်း (ဇယားကွက်များ) ---
     st.subheader("🛠️ Search & Manage Blacklist")
-    search = st.text_input("🔍 Search by Name or NRC", key="bl_search_box")
+    search = st.text_input("🔍 Search Name/NRC", key="search_box")
     
-    # ဇယားများအတွက် သီးသန့် container
-    list_container = st.container()
+    # ဇယားများကို ဤ container ထဲမှာပဲ ကန့်သတ်ထားသည်
+    results_area = st.container()
     
     try:
         query = supabase.table("blacklist").select("srno, name, nrcno, remark")
@@ -58,45 +55,43 @@ def show_blacklist_page(supabase):
             res = query.order("srno", desc=True).limit(10).execute()
         
         if res.data:
-            with list_container:
+            with results_area:
                 for row in res.data:
                     with st.container(border=True):
                         col1, col2, col3 = st.columns([6, 1, 1])
                         col1.write(f"**{row['name']}** - `{row['nrcno']}`")
-                        col1.caption(f"Remark: {row['remark']}")
+                        col1.caption(f"Note: {row['remark']}")
                         
+                        # Primary Key 'srno' ကို သုံးထားပါသည်
                         if col2.button("✏️", key=f"edit_{row['srno']}"):
                             edit_popup(supabase, row)
                         if col3.button("🗑️", key=f"del_{row['srno']}"):
                             delete_popup(supabase, row)
         else:
-            list_container.info("No record found.")
+            results_area.info("No records found.")
     except Exception as e:
-        st.error(f"Fetch Error: {e}")
+        st.error(f"Error: {e}")
 
+# --- Popups ---
 @st.dialog("Edit Record")
 def edit_popup(supabase, row):
-    u_name = st.text_input("Name", value=row['name'])
-    u_rem = st.text_area("Remark", value=row['remark'])
-    if st.button("Update Record", type="primary"):
-        supabase.table("blacklist").update({"name": u_name, "remark": u_rem}).eq("srno", row['srno']).execute()
-        st.success("Updated!")
-        time.sleep(1)
+    new_name = st.text_input("Name", value=row['name'])
+    new_rem = st.text_area("Remark", value=row['remark'])
+    if st.button("Update", type="primary"):
+        supabase.table("blacklist").update({"name": new_name, "remark": new_rem}).eq("srno", row['srno']).execute()
         st.rerun()
 
 @st.dialog("Delete Record")
 def delete_popup(supabase, row):
-    st.warning(f"Delete **{row['name']}** from blacklist?")
+    st.warning(f"Delete **{row['name']}**?")
     if st.button("Confirm Delete", type="primary"):
         supabase.table("blacklist").delete().eq("srno", row['srno']).execute()
-        st.success("Deleted!")
-        time.sleep(1)
         st.rerun()
 
-# --- Placeholder Functions ---
+# --- Page Stubs ---
 def show_dashboard_page(supabase, now):
     st.header("📊 Transaction Dashboard")
-    st.info(f"Last Updated: {now.strftime('%I:%M:%S %p')}")
+    st.info(f"Last Sync: {now.strftime('%I:%M:%S %p')}")
 
 def show_inward_page(supabase, now):
     st.header("🏦 Inward Transaction")
