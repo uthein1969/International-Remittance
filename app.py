@@ -1,52 +1,38 @@
 import streamlit as st
-from datetime import datetime
-import pytz
-import auth
+from supabase import create_client
 import functions
+import auth
+from datetime import datetime
 
-# Page Config
-st.set_page_config(page_title="Remittance Admin System", layout="wide")
+# Supabase Connection
+url = st.secrets["supabase_url"]
+key = st.secrets["supabase_key"]
+supabase = create_client(url, key)
 
-# Database Connection
-try:
-    supabase = auth.init_connection()
-except Exception as e:
-    st.error(f"Secrets Error: {e}")
-    st.stop()
+# Session State Initialize
+if 'logged_in' not in st.session_state:
+    st.session_state.logged_in = False
+if 'user' not in st.session_state:
+    st.session_state.user = None
 
-# Login စစ်ဆေးခြင်း
-if auth.check_login(supabase):
-    # Timezone သတ်မှတ်ခြင်း
-    target_tz = pytz.timezone(st.session_state.get('target_tz', 'Asia/Yangon'))
+if not st.session_state.logged_in:
+    # Login Page ခေါ်ခြင်း
+    auth.login_page(supabase)
+else:
+    # Sidebar Navigation
+    st.sidebar.title(f"Welcome, {st.session_state.user['username']}")
+    st.sidebar.write(f"📍 {st.session_state.user.get('branch', 'Main Branch')} ({st.session_state.user.get('country', 'Thailand')})")
     
-    # Sidebar Menu
-    with st.sidebar:
-        st.title(f"Welcome, {st.session_state.user_id}")
-        st.write(f"📍 {st.session_state.sel_branch} ({st.session_state.sel_country})")
-        st.divider()
-        menu = st.radio("Navigation", ["📊 Dashboard", "📋 Blacklist Info", "🏦 Inward Transaction", "⚙️ System Control"])
-        
-        if st.button("Logout"):
-            st.session_state.clear()
-            st.rerun()
+    menu = st.sidebar.radio("Navigation", ["Dashboard", "Blacklist Info", "Inward Transaction", "System Control"])
+    
+    if st.sidebar.button("Logout"):
+        st.session_state.logged_in = False
+        st.session_state.user = None
+        st.rerun()
 
-    # --- Page Sync Logic (ဇယားများ Dashboard တွင် မပေါ်စေရန်) ---
-    if 'current_page' not in st.session_state:
-        st.session_state.current_page = menu
-
-    if st.session_state.current_page != menu:
-        st.session_state.current_page = menu
-        st.rerun() # Menu ပြောင်းတိုင်း Page တစ်ခုလုံးကို Clean လုပ်ပေးပါသည်
-
-    # --- Content Display ---
-    if menu == "📊 Dashboard":
+    # Dashboard Page ခေါ်ခြင်း (AttributeError မတက်အောင် user data ထည့်ပေးထားသည်)
+    if menu == "Dashboard":
         functions.show_dashboard_page(supabase, st.session_state.user)
-
-    elif menu == "📋 Blacklist Info":
+    elif menu == "Blacklist Info":
         functions.show_blacklist_page(supabase)
-
-    elif menu == "🏦 Inward Transaction":
-        functions.show_inward_page(supabase, datetime.now(target_tz))
-
-    elif menu == "⚙️ System Control":
-        functions.show_system_control(supabase)
+    # ... ကျန်ရှိသော Menu များ ...
