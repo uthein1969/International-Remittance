@@ -16,23 +16,26 @@ with st.sidebar:
         st.session_state.logged_in = False
         st.rerun()
 
-# --- Page Refresh Logic (ဇယားတွေ Dashboard မှာ ကပ်မပါလာစေရန်) ---
-if 'last_menu' not in st.session_state:
-    st.session_state.last_menu = menu
+# --- Page Sync Logic (ဇယားများ ထပ်မနေစေရန်) ---
+if 'current_page' not in st.session_state:
+    st.session_state.current_page = menu
 
-if st.session_state.last_menu != menu:
-    st.session_state.last_menu = menu
-    st.rerun() # Menu ပြောင်းတာနဲ့ အရင် page widget တွေကို အကုန်ရှင်းပစ်ပါတယ်
+if st.session_state.current_page != menu:
+    st.session_state.current_page = menu
+    st.rerun() # Menu ပြောင်းတိုင်း အဟောင်းတွေကို ရှင်းပစ်သည်
 
-# --- Database Connection ---
-# အကယ်၍ auth.py ထဲမှာ နာမည်က init_connection ဆိုရင် ဒါကို သုံးပါ
-# အကယ်၍ init_supabase ဆိုရင် အောက်ကစာကြောင်းကို အဲဒီအတိုင်း ပြင်ပေးပါ
+# --- Database Connection Fix (AttributeError ကို ဖြေရှင်းခြင်း) ---
 try:
-    supabase = auth.init_supabase() 
-except AttributeError:
-    supabase = auth.init_connection()
+    # auth.py ထဲရှိ function နာမည်ကို စစ်ဆေးပြီး ချိတ်ဆက်ခြင်း
+    if hasattr(auth, 'init_supabase'):
+        supabase = auth.init_supabase()
+    else:
+        supabase = auth.init_connection()
+except Exception as e:
+    st.error(f"Database Connection Error: {e}")
+    st.stop()
 
-# --- Content Area ---
+# --- Content Display ---
 if menu == "📊 Dashboard":
     now_yangon = datetime.now(yangon_tz)
     functions.show_dashboard_page(supabase, now_yangon)
