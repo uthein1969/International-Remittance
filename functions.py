@@ -1,6 +1,7 @@
+import pytz
+from datetime import datetime
 import streamlit as st
 import pandas as pd
-import time
 
 def show_blacklist_page(supabase):
     st.title("📋 Blacklist Management")
@@ -89,59 +90,65 @@ def delete_popup(supabase, row):
         time.sleep(1)
         st.rerun()
 
-def show_dashboard_page(supabase, now):
-    st.title("📊 Transaction Dashboard")
+def show_dashboard_page(supabase, user_info):
+    # User ရဲ့ နိုင်ငံအလိုက် Timezone သတ်မှတ်ခြင်း
+    country = user_info.get('country', 'Thailand') # Default ကို Thailand ဟု ထားပါသည်
+    tz_dict = {
+        "Thailand": "Asia/Bangkok",
+        "Singapore": "Asia/Singapore",
+        "Myanmar": "Asia/Yangon",
+        "Malaysia": "Asia/Kuala Lumpur"
+    }
     
-    # Time info display
-    st.info(f"📅 Current Date: {now.strftime('%d-%b-%Y')} | 🕒 Last Sync: {now.strftime('%I:%M:%S %p')}")
+    selected_tz = tz_dict.get(country, "Asia/Bangkok")
+    local_now = datetime.now(pytz.timezone(selected_tz))
+
+    # Title နှင့် Live Time ကို Info Box ဖြင့်ပြခြင်း
+    st.title(f"📊 {country} Branch Dashboard")
     
+    # 🕒 Live Time Display
+    st.info(f"📍 Location: {country} | 🕒 Current Live Time: {local_now.strftime('%I:%M:%S %p')} ({country} Time)")
+
     try:
-        # Database မှ Transaction Data များ ဆွဲထုတ်ခြင်း
-        # (လူကြီးမင်း၏ table အမည် inward_transactions ဟု ယူဆထားပါသည်)
+        # --- Inward Transaction Data ဆွဲထုတ်ခြင်း ---
         res = supabase.table("inward_transactions").select("*").execute()
         df = pd.DataFrame(res.data) if res.data else pd.DataFrame()
 
         if not df.empty:
-            # Date format ပြောင်းခြင်း
             df['created_at'] = pd.to_datetime(df['created_at'])
             
-            # ၁။ Daily Total
-            today_total = df[df['created_at'].dt.date == now.date()]['amount'].sum()
-            
-            # ၂။ Monthly Total
-            month_total = df[(df['created_at'].dt.month == now.month) & (df['created_at'].dt.year == now.year)]['amount'].sum()
-            
-            # ၃။ Yearly Total
-            year_total = df[df['created_at'].dt.year == now.year]['amount'].sum()
+            # Daily, Monthly, Yearly တွက်ချက်ခြင်း
+            today_total = df[df['created_at'].dt.date == local_now.date()]['amount'].sum()
+            month_total = df[(df['created_at'].dt.month == local_now.month) & (df['created_at'].dt.year == local_now.year)]['amount'].sum()
+            year_total = df[df['created_at'].dt.year == local_now.year]['amount'].sum()
 
-            # --- Summary Metrics ပြသခြင်း ---
+            # --- Metrics ပြသခြင်း ---
             c1, c2, c3 = st.columns(3)
-            c1.metric("Daily Amount", f"{today_total:,.2f} MMK")
-            c2.metric("Monthly Amount", f"{month_total:,.2f} MMK")
-            c3.metric("Yearly Amount", f"{year_total:,.2f} MMK")
+            with c1:
+                st.metric(label="📅 Daily Total", value=f"{today_total:,.2f} MMK")
+            with c2:
+                st.metric(label="📅 Monthly Total", value=f"{month_total:,.2f} MMK")
+            with c3:
+                st.metric(label="📅 Yearly Total", value=f"{year_total:,.2f} MMK")
 
             st.divider()
 
-            # --- Chart များ ပြသခြင်း ---
-            st.subheader("📈 Transaction Trends")
-            tab1, tab2 = st.tabs(["Monthly Overview", "Daily Detail"])
+            # --- Charts ပြသခြင်း ---
+            st.subheader("📈 Inward Transaction Analysis")
+            tab1, tab2 = st.tabs(["Monthly Summary", "Daily Trends"])
             
             with tab1:
-                # Monthly Chart
                 m_chart = df.groupby(df['created_at'].dt.strftime('%b'))['amount'].sum()
                 st.bar_chart(m_chart)
                 
             with tab2:
-                # Daily Chart
                 d_chart = df.groupby(df['created_at'].dt.date)['amount'].sum()
                 st.line_chart(d_chart)
-
         else:
-            st.warning("⚠️ Dashboard တွင် ပြသရန် Transaction Data မရှိသေးပါ။")
-            
+            st.warning("ပြသရန် Transaction ဒေတာ မရှိသေးပါ။")
+
     except Exception as e:
         st.error(f"Dashboard Error: {e}")
-
 def show_inward_page(supabase, now):
     st.header("🏦 Inward Transaction")
 
