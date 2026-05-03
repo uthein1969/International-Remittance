@@ -1,5 +1,6 @@
 import streamlit as st
 import pandas as pd
+import time
 
 def show_dashboard_page(supabase, now_yangon):
     st.title("📈 Transaction Dashboard")
@@ -36,10 +37,6 @@ def show_dashboard_page(supabase, now_yangon):
     c3.metric("Yearly Inward", f"{y_sum:,.2f}")
 
     return mm_ptr, intl_ptr
-
-import streamlit as st
-import pandas as pd
-import time
 
 def show_blacklist_page(supabase):
     st.title("📋 Blacklist Management")
