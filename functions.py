@@ -150,7 +150,7 @@ def delete_popup(supabase, row):
         except Exception as e:
             st.error(f"Delete Error: {e}")    
 
-def show_inward_page(superbase, current_time):
+def show_inward_page(supabase, current_time):
     st.header("🏦 Inward Transaction")
 
 def show_system_control(supabase):
