@@ -16,16 +16,21 @@ with st.sidebar:
         st.session_state.logged_in = False
         st.rerun()
 
-# --- Page Refresh Logic (ဇယားတွေ ထပ်မနေစေရန်) ---
+# --- Page Refresh Logic (ဇယားတွေ Dashboard မှာ ကပ်မပါလာစေရန်) ---
 if 'last_menu' not in st.session_state:
     st.session_state.last_menu = menu
 
 if st.session_state.last_menu != menu:
     st.session_state.last_menu = menu
-    st.rerun() # Menu ပြောင်းတာနဲ့ Page ကို အကုန် Clear လုပ်ပစ်ခြင်း
+    st.rerun() # Menu ပြောင်းတာနဲ့ အရင် page widget တွေကို အကုန်ရှင်းပစ်ပါတယ်
 
 # --- Database Connection ---
-supabase = auth.init_connection()
+# အကယ်၍ auth.py ထဲမှာ နာမည်က init_connection ဆိုရင် ဒါကို သုံးပါ
+# အကယ်၍ init_supabase ဆိုရင် အောက်ကစာကြောင်းကို အဲဒီအတိုင်း ပြင်ပေးပါ
+try:
+    supabase = auth.init_supabase() 
+except AttributeError:
+    supabase = auth.init_connection()
 
 # --- Content Area ---
 if menu == "📊 Dashboard":
