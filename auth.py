@@ -10,22 +10,16 @@ def login_page(supabase):
         
         if submit:
             try:
-                # Database ထဲမှာ user ရှိမရှိ စစ်ဆေးခြင်း
-                res = supabase.table("users").select("*").eq("username", username).eq("password", password).execute()
+                # Table အမည်ကို 'user_setup' ဟု ပြောင်းလဲအသုံးပြုထားပါသည်
+                res = supabase.table("user_setup").select("*").eq("username", username).eq("password", password).execute()
                 
                 if res.data:
                     user_data = res.data[0]
-                    # --- အရေးကြီးသည်: Session ထဲမှာ user data သိမ်းခြင်း ---
                     st.session_state.logged_in = True
-                    st.session_state.user = user_data  # ဤနေရာတွင် branch နှင့် country အချက်အလက်များ ပါဝင်သည်
+                    st.session_state.user = user_data  # ဤနေရာတွင် Country နှင့် Branch အချက်အလက်များ ပါဝင်ပါသည်
                     st.success("Login Successful!")
                     st.rerun()
                 else:
-                    st.error("Invalid username or password.")
+                    st.error("Username သို့မဟုတ် Password မှားယွင်းနေပါသည်။")
             except Exception as e:
                 st.error(f"Login Error: {e}")
-
-def logout():
-    st.session_state.logged_in = False
-    st.session_state.user = None
-    st.rerun()
