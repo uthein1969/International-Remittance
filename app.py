@@ -16,7 +16,7 @@ if not st.session_state.logged_in:
 else:
     # Sidebar တွင် Branch နှင့် Country ပြန်လည်ပြသခြင်း
     user = st.session_state.user
-    st.sidebar.write(f"👤 Welcome, {user['username']}")
+    st.sidebar.write(f"👤 Welcome, {user['user_id']}")
     # Table ထဲက column အမည်အတိုင်း branch နှင့် country ကို ယူပါသည်
     st.sidebar.info(f"📍 {user.get('branch', 'N/A')} ({user.get('country', 'N/A')})")
     
