@@ -11,7 +11,7 @@ def login_page(supabase):
         if submit:
             try:
                 # Table အမည်ကို 'user_setup' ဟု ပြောင်းလဲအသုံးပြုထားပါသည်
-                res = supabase.table("user_setup").select("*").eq("username", username).eq("password", password).execute()
+                res = supabase.table("user_setup").select("*").eq("user_id", username).eq("password", password).execute()
                 
                 if res.data:
                     user_data = res.data[0]
