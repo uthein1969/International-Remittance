@@ -120,7 +120,7 @@ if page == "📊 Dashboard":
 # --- ၅။ Search Transactions Page Logic ---
 elif page == "🔍 Search Transactions":
     st.title("🔍 Search & Filter Transactions")
-    st.markdown("ရက်စွဲအလိုက် Ngwe လွှဲစာရင်းများကို ရှာဖွေရန်")
+    st.markdown("ရက်စွဲအလိုက် ငွေလွှဲစာရင်းများကို ရှာဖွေရန်")
 
     with st.container(border=True):
         col1, col2, col3 = st.columns([2, 2, 1])
@@ -245,16 +245,16 @@ elif page == "📋 Blacklist Info":
                                     supabase.table("blacklist").update({"name": u_name, "nrcno": u_nrc, "remark": u_reason}).eq("id", target['id']).execute()
                                     st.success("✅ Updated successfully!")
                                     st.rerun()
-                                catch Exception as e:
-                                st.error(f"Update Error: {e}")
+                                except Exception as e:
+                                    st.error(f"Update Error: {e}")
                         with b_col2:
                             if st.button("🗑️ Delete Record", type="primary", use_container_width=True):
                                 try:
                                     supabase.table("blacklist").delete().eq("id", target['id']).execute()
                                     st.warning("🗑️ Deleted successfully!")
                                     st.rerun()
-                                catch Exception as e:
-                                st.error(f"Delete Error: {e}")
+                                except Exception as e:
+                                    st.error(f"Delete Error: {e}")
             else:
                 st.info("No matching records found.")
         except Exception as e:
@@ -413,11 +413,10 @@ elif page == "⚙️ System Control":
             df_b = pd.DataFrame(res_b.data)
             st.dataframe(df_b[['branch_code', 'branch_name', 'country', 'phone_no']], use_container_width=True)
 
-    # --- (၃) User Setup (စနစ်တကျ ပြန်လည်အချောသတ်ထားသော အပိုင်း) ---
+    # --- (၃) User Setup ---
     with tab3:
         st.subheader("👤 User Management")
         
-        # User အသစ်ထည့်သွင်းခြင်း Form
         with st.expander("➕ Add New User Account"):
             with st.form("user_new_form", clear_on_submit=True):
                 u_id = st.text_input("User ID (Username)")
@@ -446,12 +445,10 @@ elif page == "⚙️ System Control":
         st.divider()
         st.subheader("📋 Registered Users List")
         
-        # ရှိပြီးသား User များကို Database မှ ဆွဲထုတ်ပြသခြင်းနှင့် ပြင်ဆင်/ဖျက်သိမ်းခြင်း
         try:
             res_u = supabase.table("user_setup").select("*").execute()
             if res_u.data:
                 df_u = pd.DataFrame(res_u.data)
-                # စာရင်းပြသခြင်း
                 st.dataframe(df_u[['user_id', 'remark', 'created_at']], use_container_width=True)
 
                 st.subheader("🛠️ Modify User Account")
@@ -469,7 +466,6 @@ elif page == "⚙️ System Control":
                         
                         col_u1, col_u2 = st.columns(2)
                         
-                        # Info Update လုပ်ခြင်း
                         if col_u1.button("🆙 Update User Now", type="primary", use_container_width=True):
                             try:
                                 supabase.table("user_setup").update({
@@ -482,14 +478,14 @@ elif page == "⚙️ System Control":
                             except Exception as e:
                                 st.error(f"Update Error: {e}")
                         
-                        # User အကောင့် ဖျက်သိမ်းခြင်း
                         if col_u2.button("🗑️ Delete User Account", type="secondary", use_container_width=True):
                             try:
                                 supabase.table("user_setup").delete().eq("id", user_data['id']).execute()
                                 st.warning(f"🗑️ User '{target_uid}' ကို ဖျက်သိမ်းလိုက်ပါပြီ။")
                                 st.rerun()
                             except Exception as e:
-                                st.error(f"Delete Error: {e}")
+                                r_text = f"Delete Error: {e}"
+                                st.error(r_text)
             else:
                 st.info("ℹ️ မှတ်ပုံတင်ထားသော User မရှိသေးပါ။")
         except Exception as e:
