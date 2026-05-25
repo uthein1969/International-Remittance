@@ -72,87 +72,121 @@ st.sidebar.markdown("---")
 st.sidebar.info("System Version 2.0v")
 
 # --- ၄။ Dashboard Page ---
-# --- ၄။ Dashboard Page (Filter, Sum & Transaction Count ပါဝင်ပြီး) ---
+# --- ၄။ Dashboard Page (Daily, Monthly, Yearly သီးသန့် Filter & Count များပါဝင်ပြီး) ---
 if page == "📊 Dashboard":
     st.title("📈 Transaction Dashboard")
     st.markdown(f"**Last Updated:** {now_yangon.strftime('%Y-%m-%d %H:%M:%S')} (Yangon Time)")
 
-    # --- Dashboard Filter Controls ---
-    st.subheader("📅 Filter Dashboard Data")
-    with st.container(border=True):
-        c_col1, c_col2 = st.columns(2)
-        with c_col1:
-            dash_s_date = st.date_input("Dashboard From Date", value=now_yangon.date(), key="dash_s")
-        with c_col2:
-            dash_e_date = st.date_input("Dashboard To Date", value=now_yangon.date(), key="dash_e")
-
+    # --- ၁။ Supabase မှ မူရင်းဒေတာ အားလုံးကို ကြိုတင်ဆွဲထုတ်ခြင်း ---
     try:
-        # ၁။ Supabase မှ ဒေတာဆွဲထုတ်ခြင်း
         res = supabase.table("inward_transactions").select("amount, created_at").execute()
-        
         if res.data:
             df_dash = pd.DataFrame(res.data)
-            
-            # ၂။ Date Conversion (Yangon Time သို့ ပြောင်းလဲခြင်း)
             df_dash['created_at'] = pd.to_datetime(df_dash['created_at']).dt.tz_convert('Asia/Yangon')
             df_dash['Date'] = df_dash['created_at'].dt.date
-            
-            # ၃။ လက်ရှိ ရက်၊ လ၊ နှစ် သတ်မှတ်ခြင်း (မူရင်း ကဒ်များအတွက်)
-            today = now_yangon.date()
-            this_month = now_yangon.month
-            this_year = now_yangon.year
-
-            # မူရင်း ကဒ်များအတွက် တွက်ချက်ခြင်း
-            daily_sum = df_dash[df_dash['created_at'].dt.date == today]['amount'].sum()
-            monthly_sum = df_dash[(df_dash['created_at'].dt.month == this_month) & 
-                                  (df_dash['created_at'].dt.year == this_year)]['amount'].sum()
-            yearly_sum = df_dash[df_dash['created_at'].dt.year == this_year]['amount'].sum()
-
-            # ၄။ Filter အလိုက် စစ်ထုတ်ပြီး ပေါင်းလဒ်နှင့် အကြိမ်ရေ (Count) တွက်ချက်ခြင်း
-            mask = (df_dash['Date'] >= dash_s_date) & (df_dash['Date'] <= dash_e_date)
-            filtered_df = df_dash.loc[mask]
-            
-            filter_sum = filtered_df['amount'].sum()
-            filter_count = len(filtered_df)  # Transaction Count တွက်ချက်ခြင်း
-            
         else:
-            daily_sum = monthly_sum = yearly_sum = filter_sum = 0
-            filter_count = 0
-            st.info("ℹ️ Database ထဲတွင် Transaction data မရှိသေးပါ။")
-
+            df_dash = pd.DataFrame(columns=["amount", "created_at", "Date"])
     except Exception as e:
-        st.error(f"❌ Dashboard Error: {e}")
-        daily_sum = monthly_sum = yearly_sum = filter_sum = 0
-        filter_count = 0
-
-    # --- ၅။ Filter Result Display (ရွေးချယ်ထားသော ရက်စွဲအလိုက် ပြသခြင်း) ---
-    st.subheader(f"📊 Filtered Results ({dash_s_date} to {dash_e_date})")
-    f1, f2 = st.columns(2)
-    f1.metric(label="💰 Total Inward Amount", value=f"{filter_sum:,.2f} MMK")
-    f2.metric(label="🔢 Total Transaction Count", value=f"{filter_count} ကြိမ်")
+        st.error(f"❌ Database Error: {e}")
+        df_dash = pd.DataFrame(columns=["amount", "created_at", "Date"])
 
     st.divider()
 
-    # --- ၆။ UI Display (မူရင်း ရောင်စုံ Card များ) ---
-    st.subheader("Daily Transaction")
-    d1, d2 = st.columns(2)
-    d1.info(f"### {daily_sum:,.2f} \n 📉 Daily Inward")
-    d2.info(f"### 0.00 \n 📉 Daily Outward")
+    # =========================================================================
+    # 📉 (၁) DAILY TRANSACTION SECTION
+    # =========================================================================
+    st.subheader("📆 Daily Transaction")
+    
+    # Daily Filter Controls
+    with st.container(border=True):
+        col_d1, col_d2, col_d3 = st.columns([2, 2, 1])
+        with col_d1:
+            d_s_date = col_d1.date_input("From Date", value=now_yangon.date(), key="d_s")
+        with col_d2:
+            d_e_date = col_d2.date_input("To Date", value=now_yangon.date(), key="d_e")
+        with col_d3:
+            st.write("##")
+            btn_d_search = st.button("Search Daily", type="primary", use_container_width=True, key="btn_d")
+
+    # Daily Calculation & Display
+    if not df_dash.empty:
+        d_mask = (df_dash['Date'] >= d_s_date) & (df_dash['Date'] <= d_e_date)
+        df_daily = df_dash.loc[d_mask]
+        daily_inward = df_daily['amount'].sum()
+        daily_count = len(df_daily)
+    else:
+        daily_inward = daily_count = 0
+
+    d_card1, d_card2 = st.columns(2)
+    d_card1.info(f"### {daily_inward:,.2f} MMK \n 📉 Daily Inward Total")
+    d_card2.info(f"### {daily_count} ကြိမ် \n 🔢 Daily Transaction Count")
 
     st.divider()
 
-    st.subheader("Monthly Transaction")
-    m1, m2 = st.columns(2)
-    m1.warning(f"### {monthly_sum:,.2f} \n 📈 Monthly Inward") 
-    m2.warning(f"### 0.00 \n 📈 Monthly Outward")
+    # =========================================================================
+    # 📈 (၂) MONTHLY TRANSACTION SECTION
+    # =========================================================================
+    st.subheader("📅 Monthly Transaction")
+    
+    # Monthly Filter Controls
+    with st.container(border=True):
+        col_m1, col_m2, col_m3 = st.columns([2, 2, 1])
+        with col_m1:
+            # လဆန်း ၁ ရက်နေ့ကို Default ထားပေးခြင်း
+            first_of_month = now_yangon.date().replace(day=1)
+            m_s_date = col_m1.date_input("From Date", value=first_of_month, key="m_s")
+        with col_m2:
+            m_e_date = col_m2.date_input("To Date", value=now_yangon.date(), key="m_e")
+        with col_m3:
+            st.write("##")
+            btn_m_search = st.button("Search Monthly", type="primary", use_container_width=True, key="btn_m")
+
+    # Monthly Calculation & Display
+    if not df_dash.empty:
+        m_mask = (df_dash['Date'] >= m_s_date) & (df_dash['Date'] <= m_e_date)
+        df_monthly = df_dash.loc[m_mask]
+        monthly_inward = df_monthly['amount'].sum()
+        monthly_count = len(df_monthly)
+    else:
+        monthly_inward = monthly_count = 0
+
+    m_card1, m_card2 = st.columns(2)
+    m_card1.warning(f"### {monthly_inward:,.2f} MMK \n 📈 Monthly Inward Total")
+    m_card2.warning(f"### {monthly_count} ကြိမ် \n 🔢 Monthly Transaction Count")
 
     st.divider()
 
-    st.subheader("Yearly Transaction")
-    y1, y2 = st.columns(2)
-    y1.error(f"### {yearly_sum:,.2f} \n 📊 Yearly Inward")
-    y2.error(f"### 0.00 \n 📊 Yearly Outward")
+    # =========================================================================
+    # 📊 (၃) YEARLY TRANSACTION SECTION
+    # =========================================================================
+    st.subheader("📊 Yearly Transaction")
+    
+    # Yearly Filter Controls
+    with st.container(border=True):
+        col_y1, col_y2, col_y3 = st.columns([2, 2, 1])
+        with col_y1:
+            # နှစ်ဆန်း ၁ ရက်နေ့ကို Default ထားပေးခြင်း
+            first_of_year = now_yangon.date().replace(month=1, day=1)
+            y_s_date = col_y1.date_input("From Date", value=first_of_year, key="y_s")
+        with col_y2:
+            y_e_date = col_y2.date_input("To Date", value=now_yangon.date(), key="y_e")
+        with col_y3:
+            st.write("##")
+            btn_y_search = st.button("Search Yearly", type="primary", use_container_width=True, key="btn_y")
 
+    # Yearly Calculation & Display
+    if not df_dash.empty:
+        y_mask = (df_dash['Date'] >= y_s_date) & (df_dash['Date'] <= y_e_date)
+        df_yearly = df_dash.loc[y_mask]
+        yearly_inward = df_yearly['amount'].sum()
+        yearly_count = len(df_yearly)
+    else:
+        yearly_inward = yearly_count = 0
+
+    y_card1, y_card2 = st.columns(2)
+    y_card1.error(f"### {yearly_inward:,.2f} MMK \n 📊 Yearly Inward Total")
+    y_card2.error(f"### {yearly_count} ကြိမ် \n 🔢 Yearly Transaction Count")
+    
 # --- ၅။ Search Transactions Page Logic ---
 elif page == "🔍 Search Transactions":
     st.title("🔍 Search & Filter Transactions")
