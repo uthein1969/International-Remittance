@@ -72,7 +72,7 @@ st.sidebar.markdown("---")
 st.sidebar.info("System Version 2.0v")
 
 # --- ၄။ Dashboard Page ---
-# --- ၄။ Dashboard Page (Daily, Monthly, Yearly သီးသန့် Filter & Count များပါဝင်ပြီး) ---
+# --- ၄။ Dashboard Page (From Month to To Month / From Year to To Year ရွေးချယ်မှု ပါဝင်ပြီး) ---
 if page == "📊 Dashboard":
     st.title("📈 Transaction Dashboard")
     st.markdown(f"**Last Updated:** {now_yangon.strftime('%Y-%m-%d %H:%M:%S')} (Yangon Time)")
@@ -84,11 +84,13 @@ if page == "📊 Dashboard":
             df_dash = pd.DataFrame(res.data)
             df_dash['created_at'] = pd.to_datetime(df_dash['created_at']).dt.tz_convert('Asia/Yangon')
             df_dash['Date'] = df_dash['created_at'].dt.date
+            df_dash['Year'] = df_dash['created_at'].dt.year
+            df_dash['Month_Num'] = df_dash['created_at'].dt.month
         else:
-            df_dash = pd.DataFrame(columns=["amount", "created_at", "Date"])
+            df_dash = pd.DataFrame(columns=["amount", "created_at", "Date", "Year", "Month_Num"])
     except Exception as e:
         st.error(f"❌ Database Error: {e}")
-        df_dash = pd.DataFrame(columns=["amount", "created_at", "Date"])
+        df_dash = pd.DataFrame(columns=["amount", "created_at", "Date", "Year", "Month_Num"])
 
     st.divider()
 
@@ -97,18 +99,15 @@ if page == "📊 Dashboard":
     # =========================================================================
     st.subheader("📆 Daily Transaction")
     
-    # Daily Filter Controls
     with st.container(border=True):
-        col_d1, col_d2, col_d3 = st.columns([2, 2, 1])
+        col_d1, col_d2, col_d3 = st.columns([2, 2, 1.2], vertical_alignment="bottom")
         with col_d1:
-            d_s_date = col_d1.date_input("From Date", value=now_yangon.date(), key="d_s")
+            d_s_date = st.date_input("From Date", value=now_yangon.date(), key="d_s")
         with col_d2:
-            d_e_date = col_d2.date_input("To Date", value=now_yangon.date(), key="d_e")
+            d_e_date = st.date_input("To Date", value=now_yangon.date(), key="d_e")
         with col_d3:
-            st.write("##")
-            btn_d_search = st.button("Search Daily", type="primary", use_container_width=True, key="btn_d")
+            btn_d_search = st.button("🔍 Search Daily", type="primary", use_container_width=True, key="btn_d")
 
-    # Daily Calculation & Display
     if not df_dash.empty:
         d_mask = (df_dash['Date'] >= d_s_date) & (df_dash['Date'] <= d_e_date)
         df_daily = df_dash.loc[d_mask]
@@ -124,26 +123,35 @@ if page == "📊 Dashboard":
     st.divider()
 
     # =========================================================================
-    # 📈 (၂) MONTHLY TRANSACTION SECTION
+    # 📈 (၂) MONTHLY TRANSACTION SECTION (From Month to To Month ပြင်ဆင်ပြီး)
     # =========================================================================
-    st.subheader("📅 Monthly Transaction")
+    st.subheader("📅 Monthly Transaction (From Month to To Month)")
     
-    # Monthly Filter Controls
-    with st.container(border=True):
-        col_m1, col_m2, col_m3 = st.columns([2, 2, 1])
-        with col_m1:
-            # လဆန်း ၁ ရက်နေ့ကို Default ထားပေးခြင်း
-            first_of_month = now_yangon.date().replace(day=1)
-            m_s_date = col_m1.date_input("From Date", value=first_of_month, key="m_s")
-        with col_m2:
-            m_e_date = col_m2.date_input("To Date", value=now_yangon.date(), key="m_e")
-        with col_m3:
-            st.write("##")
-            btn_m_search = st.button("Search Monthly", type="primary", use_container_width=True, key="btn_m")
+    # ရွေးချယ်ရမည့် လများစာရင်း
+    months_list = ["January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"]
+    current_month_name = months_list[now_yangon.month - 1]
 
-    # Monthly Calculation & Display
+    with st.container(border=True):
+        # နှစ်ကို ရွေးချယ်ခြင်း (လအလိုက် ရှာဖွေရာတွင် သက်ဆိုင်ရာ နှစ်အတွင်း၌သာ ရှာရန်)
+        m_year_options = sorted(df_dash['Year'].unique().tolist()) if not df_dash.empty else [now_yangon.year]
+        if now_yangon.year not in m_year_options:
+            m_year_options.append(now_yangon.year)
+        selected_m_year = st.selectbox("Select Year for Monthly Report", sorted(m_year_options, reverse=True), key="m_yr_sel")
+        
+        col_m1, col_m2, col_m3 = st.columns([2, 2, 1.2], vertical_alignment="bottom")
+        with col_m1:
+            from_m_name = st.selectbox("From Month", months_list, index=0, key="from_m")
+            from_m_num = months_list.index(from_m_name) + 1
+        with col_m2:
+            to_m_name = st.selectbox("To Month", months_list, index=months_list.index(current_month_name), key="to_m")
+            to_m_num = months_list.index(to_m_name) + 1
+        with col_m3:
+            btn_m_search = st.button("🔍 Search Months", type="primary", use_container_width=True, key="btn_m")
+
+    # Monthly Range Calculation
     if not df_dash.empty:
-        m_mask = (df_dash['Date'] >= m_s_date) & (df_dash['Date'] <= m_e_date)
+        # သတ်မှတ်ထားသော နှစ်အတွင်း From Month နှင့် To Month ကြားရှိ ဒေတာများကို Filter ဖြတ်ခြင်း
+        m_mask = (df_dash['Year'] == selected_m_year) & (df_dash['Month_Num'] >= from_m_num) & (df_dash['Month_Num'] <= to_m_num)
         df_monthly = df_dash.loc[m_mask]
         monthly_inward = df_monthly['amount'].sum()
         monthly_count = len(df_monthly)
@@ -151,32 +159,35 @@ if page == "📊 Dashboard":
         monthly_inward = monthly_count = 0
 
     m_card1, m_card2 = st.columns(2)
-    m_card1.warning(f"### {monthly_inward:,.2f} MMK \n 📈 Monthly Inward Total")
-    m_card2.warning(f"### {monthly_count} ကြိမ် \n 🔢 Monthly Transaction Count")
+    m_card1.warning(f"### {monthly_inward:,.2f} MMK \n 📈 {from_m_name} to {to_m_name} Total ({selected_m_year})")
+    m_card2.warning(f"### {monthly_count} ကြိမ် \n 🔢 Filtered Months Transaction Count")
 
     st.divider()
 
     # =========================================================================
-    # 📊 (၃) YEARLY TRANSACTION SECTION
+    # 📊 (၃) YEARLY TRANSACTION SECTION (From Year to To Year ပြင်ဆင်ပြီး)
     # =========================================================================
-    st.subheader("📊 Yearly Transaction")
+    st.subheader("📊 Yearly Transaction (From Year to To Year)")
     
-    # Yearly Filter Controls
-    with st.container(border=True):
-        col_y1, col_y2, col_y3 = st.columns([2, 2, 1])
-        with col_y1:
-            # နှစ်ဆန်း ၁ ရက်နေ့ကို Default ထားပေးခြင်း
-            first_of_year = now_yangon.date().replace(month=1, day=1)
-            y_s_date = col_y1.date_input("From Date", value=first_of_year, key="y_s")
-        with col_y2:
-            y_e_date = col_y2.date_input("To Date", value=now_yangon.date(), key="y_e")
-        with col_y3:
-            st.write("##")
-            btn_y_search = st.button("Search Yearly", type="primary", use_container_width=True, key="btn_y")
+    # Database ထဲရှိသမျှ ခုနှစ်စာရင်းကို ဆွဲထုတ်ခြင်း
+    year_options = sorted(df_dash['Year'].unique().tolist()) if not df_dash.empty else [now_yangon.year]
+    if now_yangon.year not in year_options:
+        year_options.append(now_yangon.year)
+    year_options = sorted(year_options)
 
-    # Yearly Calculation & Display
+    with st.container(border=True):
+        col_y1, col_y2, col_y3 = st.columns([2, 2, 1.2], vertical_alignment="bottom")
+        with col_y1:
+            from_year = st.selectbox("From Year", year_options, index=0, key="from_yr")
+        with col_y2:
+            to_year = st.selectbox("To Year", year_options, index=len(year_options)-1, key="to_yr")
+        with col_y3:
+            btn_y_search = st.button("🔍 Search Years", type="primary", use_container_width=True, key="btn_y")
+
+    # Yearly Range Calculation
     if not df_dash.empty:
-        y_mask = (df_dash['Date'] >= y_s_date) & (df_dash['Date'] <= y_e_date)
+        # From Year နှင့် To Year ကြားရှိ ဒေတာများကို Filter ဖြတ်ခြင်း
+        y_mask = (df_dash['Year'] >= from_year) & (df_dash['Year'] <= to_year)
         df_yearly = df_dash.loc[y_mask]
         yearly_inward = df_yearly['amount'].sum()
         yearly_count = len(df_yearly)
@@ -184,8 +195,8 @@ if page == "📊 Dashboard":
         yearly_inward = yearly_count = 0
 
     y_card1, y_card2 = st.columns(2)
-    y_card1.error(f"### {yearly_inward:,.2f} MMK \n 📊 Yearly Inward Total")
-    y_card2.error(f"### {yearly_count} ကြိမ် \n 🔢 Yearly Transaction Count")
+    y_card1.error(f"### {yearly_inward:,.2f} MMK \n 📊 Years {from_year} to {to_year} Total")
+    y_card2.error(f"### {yearly_count} ကြိမ် \n 🔢 Filtered Years Transaction Count")
     
 # --- ၅။ Search Transactions Page Logic ---
 elif page == "🔍 Search Transactions":
