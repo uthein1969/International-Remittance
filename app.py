@@ -206,11 +206,12 @@ elif page == "🔍 Search Transactions":
     with st.container(border=True):
         col1, col2, col3 = st.columns([2, 2, 1.2], vertical_alignment="bottom") #
         with col1:
-        s_date = st.date_input("Start Date", value=now_yangon.date()) #
+            s_date = st.date_input("Start Date", value=now_yangon.date()) #
         with col2:
-        e_date = st.date_input("End Date", value=now_yangon.date()) #
+            e_date = st.date_input("End Date", value=now_yangon.date()) #
         with col3:
-        btn_search = st.button("Search Now", type="primary", use_container_width=True) #
+            # 💡 လိုင်း ၂၁၃ ကို st.button လို့ စာလုံးပေါင်းအမှား ပြင်ဆင်ထားပါတယ်ဗျာ
+            btn_search = st.button("Search Now", type="primary", use_container_width=True) #
 
     try:
         res = supabase.table("inward_transactions").select("*").order("created_at", desc=True).execute()
