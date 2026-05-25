@@ -204,7 +204,7 @@ elif page == "🔍 Search Transactions":
     st.markdown("ရက်စွဲအလိုက် ငွေလွှဲစာရင်းများကို ရှာဖွေရန်")
 
     with st.container(border=True):
-        col1, col2, col3 = st.columns([2, 2, 1])
+        col1, col2, col3 = st.columns([2, 2, 1.2])
         with col1:
             s_date = st.date_input("Start Date", value=now_yangon.date())
         with col2:
