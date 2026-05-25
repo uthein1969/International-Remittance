@@ -106,7 +106,7 @@ if page == "📊 Dashboard":
         with col_d2:
             d_e_date = st.date_input("To Date", value=now_yangon.date(), key="d_e")
         with col_d3:
-            btn_d_search = st.button("🔍 Search Daily", type="primary", use_container_width=True, key="btn_d")
+            btn_d_search = st.button("🔍 Search", type="primary", use_container_width=True, key="btn_d")
 
     if not df_dash.empty:
         d_mask = (df_dash['Date'] >= d_s_date) & (df_dash['Date'] <= d_e_date)
@@ -146,7 +146,7 @@ if page == "📊 Dashboard":
             to_m_name = st.selectbox("To Month", months_list, index=months_list.index(current_month_name), key="to_m")
             to_m_num = months_list.index(to_m_name) + 1
         with col_m3:
-            btn_m_search = st.button("🔍 Search Months", type="primary", use_container_width=True, key="btn_m")
+            btn_m_search = st.button("🔍 Search", type="primary", use_container_width=True, key="btn_m")
 
     # Monthly Range Calculation
     if not df_dash.empty:
@@ -182,7 +182,7 @@ if page == "📊 Dashboard":
         with col_y2:
             to_year = st.selectbox("To Year", year_options, index=len(year_options)-1, key="to_yr")
         with col_y3:
-            btn_y_search = st.button("🔍 Search Years", type="primary", use_container_width=True, key="btn_y")
+            btn_y_search = st.button("🔍 Search", type="primary", use_container_width=True, key="btn_y")
 
     # Yearly Range Calculation
     if not df_dash.empty:
