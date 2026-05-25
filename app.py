@@ -72,32 +72,68 @@ st.sidebar.markdown("---")
 st.sidebar.info("System Version 2.0v")
 
 # --- ၄။ Dashboard Page ---
+# --- ၄။ Dashboard Page (Filter, Sum & Transaction Count ပါဝင်ပြီး) ---
 if page == "📊 Dashboard":
     st.title("📈 Transaction Dashboard")
     st.markdown(f"**Last Updated:** {now_yangon.strftime('%Y-%m-%d %H:%M:%S')} (Yangon Time)")
 
+    # --- Dashboard Filter Controls ---
+    st.subheader("📅 Filter Dashboard Data")
+    with st.container(border=True):
+        c_col1, c_col2 = st.columns(2)
+        with c_col1:
+            dash_s_date = st.date_input("Dashboard From Date", value=now_yangon.date(), key="dash_s")
+        with c_col2:
+            dash_e_date = st.date_input("Dashboard To Date", value=now_yangon.date(), key="dash_e")
+
     try:
+        # ၁။ Supabase မှ ဒေတာဆွဲထုတ်ခြင်း
         res = supabase.table("inward_transactions").select("amount, created_at").execute()
+        
         if res.data:
             df_dash = pd.DataFrame(res.data)
-            df_dash['created_at'] = pd.to_datetime(df_dash['created_at']).dt.tz_convert('Asia/Yangon')
             
+            # ၂။ Date Conversion (Yangon Time သို့ ပြောင်းလဲခြင်း)
+            df_dash['created_at'] = pd.to_datetime(df_dash['created_at']).dt.tz_convert('Asia/Yangon')
+            df_dash['Date'] = df_dash['created_at'].dt.date
+            
+            # ၃။ လက်ရှိ ရက်၊ လ၊ နှစ် သတ်မှတ်ခြင်း (မူရင်း ကဒ်များအတွက်)
             today = now_yangon.date()
             this_month = now_yangon.month
             this_year = now_yangon.year
 
+            # မူရင်း ကဒ်များအတွက် တွက်ချက်ခြင်း
             daily_sum = df_dash[df_dash['created_at'].dt.date == today]['amount'].sum()
             monthly_sum = df_dash[(df_dash['created_at'].dt.month == this_month) & 
                                   (df_dash['created_at'].dt.year == this_year)]['amount'].sum()
             yearly_sum = df_dash[df_dash['created_at'].dt.year == this_year]['amount'].sum()
+
+            # ၄။ Filter အလိုက် စစ်ထုတ်ပြီး ပေါင်းလဒ်နှင့် အကြိမ်ရေ (Count) တွက်ချက်ခြင်း
+            mask = (df_dash['Date'] >= dash_s_date) & (df_dash['Date'] <= dash_e_date)
+            filtered_df = df_dash.loc[mask]
+            
+            filter_sum = filtered_df['amount'].sum()
+            filter_count = len(filtered_df)  # Transaction Count တွက်ချက်ခြင်း
+            
         else:
-            daily_sum = monthly_sum = yearly_sum = 0
+            daily_sum = monthly_sum = yearly_sum = filter_sum = 0
+            filter_count = 0
             st.info("ℹ️ Database ထဲတွင် Transaction data မရှိသေးပါ။")
 
     except Exception as e:
         st.error(f"❌ Dashboard Error: {e}")
-        daily_sum = monthly_sum = yearly_sum = 0
+        daily_sum = monthly_sum = yearly_sum = filter_sum = 0
+        filter_count = 0
 
+    # --- ၅။ Filter Result Display (ရွေးချယ်ထားသော ရက်စွဲအလိုက် ပြသခြင်း) ---
+    st.subheader(f"📊 Filtered Results ({dash_s_date} to {dash_e_date})")
+    f1, f2 = st.columns(2)
+    f1.metric(label="💰 Total Inward Amount", value=f"{filter_sum:,.2f} MMK")
+    f2.metric(label="🔢 Total Transaction Count", value=f"{filter_count} ကြိမ်")
+
+    st.divider()
+
+    # --- ၆။ UI Display (မူရင်း ရောင်စုံ Card များ) ---
     st.subheader("Daily Transaction")
     d1, d2 = st.columns(2)
     d1.info(f"### {daily_sum:,.2f} \n 📉 Daily Inward")
