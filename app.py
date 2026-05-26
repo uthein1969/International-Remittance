@@ -334,6 +334,54 @@ elif page == "🏦 Inward Transaction":
                     if response.data:
                         st.success("✅ ဒေတာကို အောင်မြင်စွာ သိမ်းဆည်းပြီးပါပြီ။")
                         st.balloons()
+                        # --- 📄 PAYOUT SLIP DISPLAY START ---
+                        st.markdown("---")
+                        st.subheader("📄 International Remittance - Payout Slip")
+                        # Slip တစ်ခုလုံးကို Box လှလှလေးထဲ ထည့်ပြပါမည်
+                        with st.container(border=True):
+                            # Header ပိုင်း
+                            st.markdown(f"### **Transaction No:** `{trans_no}`")
+                            st.markdown(f"**Branch:** {branch} | **Date & Time:** {now_yangon.strftime('%Y-%m-%d %H:%M:%S')}")
+                            st.divider()
+                            # Receiver နှင့် Sender အချက်အလက်များကို ဘေးတိုက်ပြခြင်း
+                            slip_col1, slip_col2 = st.columns(2)
+                            
+                            with slip_col1:
+                                st.markdown("#### 🔵 Receiver Details (ငွေလက်ခံသူ)")
+                                st.markdown(f"**Name:** {r_name}")
+                                st.markdown(f"**NRC:** {r_nrc}")
+                                st.markdown(f"**Phone:** {r_phone}")
+                                st.markdown(f"**Address:** {r_address}, {r_state}")
+                                st.markdown(f"**Withdraw Point:** {r_point}")
+                                if r_remark:
+                                    st.markdown(f"**Withdraw Remark:** {r_remark}")
+                                    
+                            with slip_col2:
+                                st.markdown("#### 🟢 Sender Details (ငွေလွှဲပို့သူ)")
+                                st.markdown(f"**Name:** {s_name}")
+                                st.markdown(f"**ID/Passport:** {s_id}")
+                                st.markdown(f"**Country:** {s_country}")
+                                st.markdown(f"**Purpose:** {r_purpose}")
+                            st.divider()
+                
+                            # ငွေကြေးဆိုင်ရာ အချက်အလက်များ
+                            st.markdown("#### 💰 Financial Details")
+                            f_col1, f_col2, f_col3 = st.columns(3)
+                            f_col1.metric("Source Amount", f"{amount:,.2f} {currency}")
+                            f_col2.metric("Exchange Rate", f"{mmk_rate:,.2f} MMK")
+                            f_col3.metric("Allowance / Bonus", f"{mmk_allowance:,.2f} MMK")
+                            
+                            # စုစုပေါင်းထုတ်ပေးရမည့် မြန်မာငွေကို အကြီးကြီးပြခြင်း
+                            st.info(f"## **Total Payout Amount:** {calc_total_mmk:,.2f} MMK")
+                        
+                        # Print ထုတ်ရန် သို့မဟုတ် အတည်ပြုရန်အတွက် ခလုတ်တစ်ခု ထားပေးခြင်း
+                        if st.button("🔄 Done & Clear Form", type="primary", use_container_width=True):
+                            import time
+                            time.sleep(0.5)
+                            st.rerun()
+                            
+                        st.stop() # Slip ကို ဝန်ထမ်းက မြင်အောင် ခေတ္တရပ်ထားပြီး "Done" နှိပ်မှ Form ရှင်းစေရန်
+                        # --- 📄 PAYOUT SLIP DISPLAY END ---
                         import time
                         time.sleep(1.5)
                         st.rerun()
