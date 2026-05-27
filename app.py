@@ -222,20 +222,111 @@ elif page == "🔍 Search Transactions":
             
             if btn_search:
                 mask = (df_search['Date'] >= s_date) & (df_search['Date'] <= e_date)
-                result_df = df_search.loc[mask]
+                st.session_state['search_results'] = df_search.loc[mask].to_dict('records')
+
+            # ရှာဖွေထားသော ရလဒ်များ ရှိပါက ပြသမည်
+            if 'search_results' in st.session_state and st.session_state['search_results']:
+                results_list = st.session_state['search_results']
+                df_display = pd.DataFrame(results_list)
                 
-                if not result_df.empty:
-                    st.success(f"Found {len(result_df)} transactions.")
-                    display_cols = ['transaction_no', 'branch', 'r_name', 'r_nrc', 's_name', 'amount', 'currency', 'total_mmk', 'Date']
-                    st.dataframe(result_df[display_cols], use_container_width=True)
-                    csv = result_df.to_csv(index=False).encode('utf-8')
-                    st.download_button("📥 Download as CSV", data=csv, file_name="search_results.csv", mime="text/csv")
-                else:
-                    st.warning("No data available for the selected date.")
+                st.success(f"Found {len(df_display)} transactions.")
+                display_cols = ['transaction_no', 'branch', 'r_name', 'r_nrc', 's_name', 'amount', 'currency', 'total_mmk', 'Date']
+                st.dataframe(df_display[display_cols], use_container_width=True)
+                
+                # CSV Download Button
+                csv = df_display.to_csv(index=False).encode('utf-8')
+                st.download_button("📥 Download as CSV", data=csv, file_name="search_results.csv", mime="text/csv")
+                
+                st.divider()
+                
+                # =========================================================================
+                # 🖨️ TRANSACTION ရွေးချယ်ပြီး PAYOUT SLIP PRINT ထုတ်သည့်အပိုင်း
+                # =========================================================================
+                st.subheader("🖨️ Select Transaction to Print Payout Slip")
+                
+                # Dropdown တွင် ရွေးချယ်ရလွယ်ကူစေရန် format ပြုလုပ်ခြင်း
+                trans_options = {f"No: {r['transaction_no']} | Receiver: {r['r_name']} ({r['r_nrc']})": r for r in results_list}
+                selected_trans_key = st.selectbox("Choose a transaction from the list:", options=["-- Select Transaction --"] + list(trans_options.keys()))
+                
+                if selected_trans_key != "-- Select Transaction --":
+                    sd = trans_options[selected_trans_key]
+                    
+                    # မျက်နှာပြင်ပေါ်တွင် Slip Preview ပြသခြင်း
+                    with st.container(border=True):
+                        st.markdown(f"### **Transaction No:** `{sd['transaction_no']}`")
+                        # Database ထဲမှ created_at ကို အသုံးပြု၍ အချိန်ပြသခြင်း
+                        formatted_time = pd.to_datetime(sd['created_at']).strftime('%Y-%m-%d %H:%M:%S')
+                        st.markdown(f"**Branch:** {sd['branch']} | **Date & Time:** {formatted_time}")
+                        st.divider()
+                        
+                        sc1, sc2 = st.columns(2)
+                        with sc1:
+                            st.markdown("#### 🔵 Receiver Details")
+                            st.markdown(f"**Name:** {sd['r_name']}")
+                            st.markdown(f"**NRC:** {sd['r_nrc']}")
+                            st.markdown(f"**Phone:** {sd['r_phone']}")
+                            st.markdown(f"**Address:** {sd['r_address']}, {sd['r_state']}")
+                            st.markdown(f"**Withdraw Point:** {sd['r_withdraw_point']}")
+                        with sc2:
+                            st.markdown("#### 🟢 Sender Details")
+                            st.markdown(f"**Name:** {sd['s_name']}")
+                            st.markdown(f"**ID/Passport:** {sd['s_id']}")
+                            st.markdown(f"**Country:** {sd['s_country']}")
+                            st.markdown(f"**Purpose:** {sd['r_purpose']}")
+                        st.divider()
+                        st.info(f"## **Total Payout Amount:** {float(sd['total_mmk']):,.2f} MMK")
+
+                    # Printer စနစ်သို့ HTML/JS ဖြင့် လှမ်းချိတ်ခြင်း
+                    html_code = f"""
+                    <script>
+                    function printSlip() {{
+                        var printContents = document.getElementById('print-area-search').innerHTML;
+                        var originalContents = document.body.innerHTML;
+                        document.body.innerHTML = printContents;
+                        window.print();
+                        document.body.innerHTML = originalContents;
+                        window.location.reload();
+                    }}
+                    </script>
+                    <div id="print-area-search" style="padding:20px; font-family:sans-serif; color:#000; background:#fff; border:1px solid #ccc; max-width:600px; margin:auto;">
+                        <h2 style="text-align:center; margin-bottom:5px;">PAYOUT SLIP (REMITTANCE)</h2>
+                        <p style="text-align:center; font-size:12px; margin-top:0;">Transaction No: <b>{sd['transaction_no']}</b></p>
+                        <hr>
+                        <p><b>Date:</b> {formatted_time} | <b>Branch:</b> {sd['branch']}</p>
+                        <table style="width:100%; border-collapse:collapse; margin-top:15px;">
+                            <tr>
+                                <td style="width:50%; vertical-align:top; padding:5px; border:1px solid #ddd;">
+                                    <h4>[ RECEIVER INFO ]</h4>
+                                    <p>Name: {sd['r_name']}<br>NRC: {sd['r_nrc']}<br>Phone: {sd['r_phone']}<br>Point: {sd['r_withdraw_point']}</p>
+                                </td>
+                                <td style="width:50%; vertical-align:top; padding:5px; border:1px solid #ddd;">
+                                    <h4>[ SENDER INFO ]</h4>
+                                    <p>Name: {sd['s_name']}<br>ID/Pass: {sd['s_id']}<br>Country: {sd['s_country']}<br>Purpose: {sd['r_purpose']}</p>
+                                </td>
+                            </tr>
+                        </table>
+                        <div style="margin-top:20px; padding:15px; background:#f4f4f4; text-align:center; border:1px solid #ccc;">
+                            <h3 style="margin:0;">TOTAL PAYOUT AMOUNT</h3>
+                            <h2 style="margin:5px 0 0 0; color:#d9534f;">{float(sd['total_mmk']):,.2f} MMK</h2>
+                        </div>
+                        <br><br>
+                        <table style="width:100%; text-align:center; margin-top:30px;">
+                            <tr>
+                                <td>____________________<br>Staff Signature</td>
+                                <td>____________________<br>Customer Signature</td>
+                            </tr>
+                        </table>
+                    </div>
+                    """
+                    
+                    with st.expander("🖨️ Preview Print Layout (A4/Receipt)", expanded=True):
+                        st.components.v1.html(html_code + "<br><button onclick='printSlip()' style='width:100%; padding:10px; background-color:#ff4b4b; color:white; border:none; border-radius:4px; font-weight:bold; cursor:pointer;'>🖨️ Click to Print Payout Slip</button>", height=520, scrolling=True)
             else:
-                st.info("Select Date and press Search Now Button")
+                if btn_search:
+                    st.warning("No data available for the selected date.")
         else:
             st.info("No Data in Database")
+            
     except Exception as e:
         st.error(f"Search Error: {e}")
 
