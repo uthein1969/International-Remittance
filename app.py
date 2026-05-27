@@ -8,6 +8,7 @@ st.set_page_config(layout="wide")
 
 yangon_tz = pytz.timezone('Asia/Yangon')
 now_yangon = datetime.now(yangon_tz)
+
 def safe_float(val):
     try:
         if val is None or str(val).strip() == "":
@@ -15,16 +16,23 @@ def safe_float(val):
         return float(val)
     except (ValueError, TypeError):
         return 0.0
-# --- ၁။ Setup & Connections ---
-URL = st.secrets["SUPABASE_URL"]
-KEY = st.secrets["SUPABASE_KEY"]
-supabase: Client = create_client(URL, KEY)
+    
+# --- ၁။ Setup & Connections (အမှားကင်းဆုံးစနစ် ပြင်ဆင်ခြင်း) ---
+def get_supabase_client():
+    URL = st.secrets["SUPABASE_URL"]
+    KEY = st.secrets["SUPABASE_KEY"]
+    return create_client(URL, KEY)
 
-# --- ၁။ Login Session စတင်ခြင်း ---
+# 💡 လော့ဂ်အင် ဝင်သည်ဖြစ်စေ၊ မဝင်သည်ဖြစ်စေ အောက်က စာမျက်နှာများပါ လှမ်းသုံးနိုင်ရန် စတင်ချိတ်ဆက်ခြင်း
+try:
+    supabase = get_supabase_client()
+except Exception as e:
+    st.error(f"Database Connection Error: {e}")
+
 if 'logged_in' not in st.session_state:
     st.session_state['logged_in'] = False
 
-# --- ၂။ Login Page ပြသခြင်း ---
+
 if not st.session_state['logged_in']:
     st.title("🔐 Admin Login System")
     
@@ -35,7 +43,7 @@ if not st.session_state['logged_in']:
         
         if submit_btn:
             try:
-                # Database ထဲတွင် User ID နှင့် Password ကိုက်မကိုက် စစ်ဆေးခြင်း
+                # 💡 ဒေတာဘေ့စ်မှ User စာရင်းကို စစ်ဆေးခြင်း
                 res = supabase.table("user_setup")\
                     .select("*")\
                     .eq("user_id", input_user)\
@@ -44,14 +52,16 @@ if not st.session_state['logged_in']:
                 
                 if res.data:
                     st.session_state['logged_in'] = True
+                    st.session_state['username'] = input_user
                     st.success("✅ Login Successful!")
-                    st.rerun() # Login အောင်မြင်လျှင် စာမျက်နှာကို Refresh လုပ်ရန်
+                    st.rerun() 
                 else:
                     st.error("❌ Invalid User ID or Password")
             except Exception as e:
                 st.error(f"Login Error: {e}")
     
     st.stop()
+    
 # --- ၃။ Main System  ---
 st.sidebar.success("Logged In ✅")
 if st.sidebar.button("Logout"):
