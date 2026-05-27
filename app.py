@@ -19,7 +19,7 @@ def safe_float(val):
     
 # --- ၁။ Setup & Connections (အမှားကင်းဆုံးစနစ် ပြင်ဆင်ခြင်း) ---
 def get_supabase_client():
-    URL = st.secrets["SUPABASE_URL"]
+    URL = "https://3.220.158.125"
     KEY = st.secrets["SUPABASE_KEY"]
     return create_client(URL, KEY)
 
@@ -61,7 +61,7 @@ if not st.session_state['logged_in']:
                 st.error(f"Login Error: {e}")
     
     st.stop()
-    
+
 # --- ၃။ Main System  ---
 st.sidebar.success("Logged In ✅")
 if st.sidebar.button("Logout"):
