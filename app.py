@@ -341,8 +341,30 @@ elif page == "📋 Blacklist Info":
         except Exception as e:
             st.error(f"Search Error: {e}")
 
-# --- ၇။ Inward Transaction Page ---
+# --- ၇။ Inward Transaction Page (Print Slip နှင့် Form Clear စနစ် ပါဝင်ပြီး) ---
 elif page == "🏦 Inward Transaction":
+    st.title("🏦 Inward Transaction Management")
+
+    # --- ၁။ Form Clear ဖြစ်စေရန်အတွက် Session State Variables များ ကြေညာခြင်း ---
+    # Input အကွက်တစ်ခုချင်းစီကို တိုက်ရိုက်ထိန်းချုပ်ရန် ဖြစ်ပါသည်
+    if 'r_name_val' not in st.session_state: st.session_state.r_name_val = ""
+    if 'r_nrc_val' not in st.session_state: st.session_state.r_nrc_val = ""
+    if 'r_addr_val' not in st.session_state: st.session_state.r_addr_val = ""
+    if 'r_ph_val' not in st.session_state: st.session_state.r_ph_val = ""
+    if 'r_point_val' not in st.session_state: st.session_state.r_point_val = ""
+    if 'r_remark_val' not in st.session_state: st.session_state.r_remark_val = ""
+    if 's_name_val' not in st.session_state: st.session_state.s_name_val = ""
+    if 's_id_val' not in st.session_state: st.session_state.s_id_val = ""
+    if 's_country_val' not in st.session_state: st.session_state.s_country_val = "Thailand"
+    if 'amount_val' not in st.session_state: st.session_state.amount_val = 0.0
+    if 'mmk_rate_val' not in st.session_state: st.session_state.mmk_rate_val = 0.0
+    if 'mmk_allow_val' not in st.session_state: st.session_state.mmk_allow_val = 0.0
+    if 'usd_equiv_val' not in st.session_state: st.session_state.usd_equiv_val = 0.0
+    if 'total_mmk_val' not in st.session_state: st.session_state.total_mmk_val = 0.0
+    if 'show_slip' not in st.session_state: st.session_state.show_slip = False
+    if 'slip_data' not in st.session_state: st.session_state.slip_data = {}
+
+    # --- ၂။ နောက်ဆုံး Transaction No ကို Database မှ ဆွဲထုတ်ခြင်း ---
     try:
         last_trans = supabase.table("inward_transactions").select("transaction_no").order("created_at", desc=True).limit(1).execute()
         if last_trans.data:
@@ -353,123 +375,187 @@ elif page == "🏦 Inward Transaction":
     except Exception:
         new_no = "0001"
 
-    h_col1, h_col2, h_col3 = st.columns(3)
-    with h_col1:
-        st.text_input("Date:", value=now_yangon.strftime("%Y-%m-%d %H:%M:%S"), disabled=True)
-    with h_col2:
-        branch = st.selectbox("Select Branch", ["Yangon Branch", "Mandalay Branch", "Nay Pyi Taw Branch"])
-    with h_col3:
-        trans_no = st.text_input("Transaction No:", value=new_no)
+    # --- ၃။ Slip ပြသရမည့် အခြေအနေ မဟုတ်ပါက Form ကို ပြသမည် ---
+    if not st.session_state.show_slip:
+        # --- Header Information ---
+        h_col1, h_col2, h_col3 = st.columns(3, vertical_alignment="bottom")
+        with h_col1:
+            st.text_input("Date:", value=now_yangon.strftime("%Y-%m-%d %H:%M:%S"), disabled=True)
+        with h_col2:
+            branch = st.selectbox("Select Branch", ["Yangon Branch", "Mandalay Branch", "Nay Pyi Taw Branch"])
+        with h_col3:
+            trans_no = st.text_input("Transaction No:", value=new_no)
 
-    st.subheader("🔵 RECEIVER INFORMATION :")
-    with st.container(border=True):
-        r_col1, r_col2 = st.columns(2)
-        r_name = r_col1.text_input("Receiver Name:")
-        r_nrc = r_col2.text_input("Receiver NRC:")
-        r_addr_col, r_ph_col, r_purp_col = st.columns([2, 1, 1])
-        r_address = r_addr_col.text_input("Receiver Address:")
-        r_phone = r_ph_col.text_input("Receiver Phone:")
-        r_purpose = r_purp_col.selectbox("Purpose", ["Family Support", "Business", "Gift"])
-        r_state_col, r_point_col = st.columns(2)
-        r_state = r_state_col.selectbox("State & Division", ["Yangon", "Mandalay", "Shan", "Bago"])
-        r_point = r_point_col.text_input("Withdraw Point:")
-        r_remark = st.text_area("Remark for Withdraw Point:")
+        # --- RECEIVER INFORMATION ---
+        st.subheader("🔵 RECEIVER INFORMATION :")
+        with st.container(border=True):
+            r_col1, r_col2 = st.columns(2)
+            r_name = r_col1.text_input("Receiver Name:", key="r_name_in", value=st.session_state.r_name_val)
+            r_nrc = r_col2.text_input("Receiver NRC:", key="r_nrc_in", value=st.session_state.r_nrc_val)
 
-    st.subheader("🔵 SENDER INFORMATION :")
-    with st.container(border=True):
-        s_name_col, s_id_col, s_country_col = st.columns([2, 2, 1])
-        s_name = s_name_col.text_input("Sender Name:")
-        s_id = s_id_col.text_input("NRC/Passport ID:")
-        s_country = s_country_col.text_input("Country", value="Thailand")
+            r_addr_col, r_ph_col, r_purp_col = st.columns([2, 1, 1])
+            r_address = r_addr_col.text_input("Receiver Address:", key="r_addr_in", value=st.session_state.r_addr_val)
+            r_phone = r_ph_col.text_input("Receiver Phone:", key="r_ph_in", value=st.session_state.r_ph_val)
+            r_purpose = r_purp_col.selectbox("Purpose", ["Family Support", "Business", "Gift"])
 
-        s_cur_col, s_mmk_col, s_usd_col = st.columns(3)
-        with s_cur_col:
-            currency = st.selectbox("Currency", ["THB", "USD", "SGD"])
-            amount = st.number_input("Amount", min_value=0.0, format="%.2f")
-        with s_mmk_col:
-            mmk_rate = st.number_input("MMK Rate", min_value=0.0, format="%.2f")
-            mmk_allowance = st.number_input("MMK Allowance", min_value=0.0, format="%.2f")
-        with s_usd_col:
-            usd_equiv = st.number_input("USD Equivalent", min_value=0.0)
-            total_mmk = st.number_input("Total MMK", min_value=0.0)
-            
-        calc_total_mmk = (amount * mmk_rate) + mmk_allowance
-        st.markdown(f"### Total MMK: **{calc_total_mmk:,.2f}**")
+            r_state_col, r_point_col = st.columns(2)
+            r_state = r_state_col.selectbox("State & Division", ["Yangon", "Mandalay", "Shan", "Bago"])
+            r_point = r_point_col.text_input("Withdraw Point:", key="r_point_in", value=st.session_state.r_point_val)
+            r_remark = st.text_area("Remark for Withdraw Point:", key="r_remark_in", value=st.session_state.r_remark_val)
 
-    if st.button("💾 Save Inward Transaction", type="primary", use_container_width=True):
-        if r_name and r_nrc:
-            try:
-                check_bl = supabase.table("blacklist").select("name").eq("nrcno", r_nrc).execute()
-                if len(check_bl.data) > 0:
-                    st.error(f"❌ Blacklisted User: {check_bl.data[0]['name']}")
-                else:
-                    new_data = {
-                        "branch": branch, "transaction_no": trans_no, "r_name": r_name, "r_nrc": r_nrc,
-                        "r_address": r_address, "r_phone": r_phone, "r_purpose": r_purpose, "r_state": r_state,
-                        "r_withdraw_point": r_point, "r_remark": r_remark, "s_name": s_name, "s_id": s_id,
-                        "s_country": s_country, "currency": currency, "amount": float(amount), "mmk_rate": float(mmk_rate),
-                        "mmk_allowance": float(mmk_allowance), "usd_equiv": float(usd_equiv) if usd_equiv else 0,
-                        "total_mmk": float(calc_total_mmk)
-                    }
-                    response = supabase.table("inward_transactions").insert(new_data).execute()
-                    if response.data:
-                        st.success("✅ ဒေတာကို အောင်မြင်စွာ သိမ်းဆည်းပြီးပါပြီ။")
-                        st.balloons()
-                        # --- 📄 PAYOUT SLIP DISPLAY START ---
-                        st.markdown("---")
-                        st.subheader("📄 International Remittance - Payout Slip")
-                        # Slip တစ်ခုလုံးကို Box လှလှလေးထဲ ထည့်ပြပါမည်
-                        with st.container(border=True):
-                            # Header ပိုင်း
-                            st.markdown(f"### **Transaction No:** `{trans_no}`")
-                            st.markdown(f"**Branch:** {branch} | **Date & Time:** {now_yangon.strftime('%Y-%m-%d %H:%M:%S')}")
-                            st.divider()
-                            # Receiver နှင့် Sender အချက်အလက်များကို ဘေးတိုက်ပြခြင်း
-                            slip_col1, slip_col2 = st.columns(2)
-                            
-                            with slip_col1:
-                                st.markdown("#### 🔵 Receiver Details (ငွေလက်ခံသူ)")
-                                st.markdown(f"**Name:** {r_name}")
-                                st.markdown(f"**NRC:** {r_nrc}")
-                                st.markdown(f"**Phone:** {r_phone}")
-                                st.markdown(f"**Address:** {r_address}, {r_state}")
-                                st.markdown(f"**Withdraw Point:** {r_point}")
-                                if r_remark:
-                                    st.markdown(f"**Withdraw Remark:** {r_remark}")
-                                    
-                            with slip_col2:
-                                st.markdown("#### 🟢 Sender Details (ငွေလွှဲပို့သူ)")
-                                st.markdown(f"**Name:** {s_name}")
-                                st.markdown(f"**ID/Passport:** {s_id}")
-                                st.markdown(f"**Country:** {s_country}")
-                                st.markdown(f"**Purpose:** {r_purpose}")
-                            st.divider()
+        # --- SENDER INFORMATION ---
+        st.subheader("🔵 SENDER INFORMATION :")
+        with st.container(border=True):
+            s_name_col, s_id_col, s_country_col = st.columns([2, 2, 1])
+            s_name = s_name_col.text_input("Sender Name:", key="s_name_in", value=st.session_state.s_name_val)
+            s_id = s_id_col.text_input("NRC/Passport ID:", key="s_id_in", value=st.session_state.s_id_val)
+            s_country = s_country_col.text_input("Country", value=st.session_state.s_country_val, key="s_country_in")
+
+            s_cur_col, s_mmk_col, s_usd_col = st.columns(3)
+            with s_cur_col:
+                currency = st.selectbox("Currency", ["THB", "USD", "SGD"])
+                amount = st.number_input("Amount", min_value=0.0, format="%.2f", key="amount_in", value=st.session_state.amount_val)
+            with s_mmk_col:
+                mmk_rate = st.number_input("MMK Rate", min_value=0.0, format="%.2f", key="mmk_rate_in", value=st.session_state.mmk_rate_val)
+                mmk_allowance = st.number_input("MMK Allowance", min_value=0.0, format="%.2f", key="mmk_allow_in", value=st.session_state.mmk_allow_val)
+            with s_usd_col:
+                usd_equiv = st.number_input("USD Equivalent", min_value=0.0, key="usd_equiv_in", value=st.session_state.usd_equiv_val)
+                total_mmk_input = st.number_input("Total MMK", min_value=0.0, key="total_mmk_in", value=st.session_state.total_mmk_val)
                 
-                            # ငွေကြေးဆိုင်ရာ အချက်အလက်များ
-                            st.markdown("#### 💰 Financial Details")
-                            f_col1, f_col2, f_col3 = st.columns(3)
-                            f_col1.metric("Source Amount", f"{amount:,.2f} {currency}")
-                            f_col2.metric("Exchange Rate", f"{mmk_rate:,.2f} MMK")
-                            f_col3.metric("Allowance / Bonus", f"{mmk_allowance:,.2f} MMK")
-                            
-                            # စုစုပေါင်းထုတ်ပေးရမည့် မြန်မာငွေကို အကြီးကြီးပြခြင်း
-                            st.info(f"## **Total Payout Amount:** {calc_total_mmk:,.2f} MMK")
-                        
-                        # Print ထုတ်ရန် သို့မဟုတ် အတည်ပြုရန်အတွက် ခလုတ်တစ်ခု ထားပေးခြင်း
-                        if st.button("🔄 Done & Clear Form", type="primary", use_container_width=True):
-                            import time
-                            time.sleep(0.5)
+            calc_total_mmk = (amount * mmk_rate) + mmk_allowance
+            st.markdown(f"### Total MMK: **{calc_total_mmk:,.2f}**")
+
+        # --- SAVE ACTION & BLACKLIST CHECK ---
+        if st.button("💾 Save Inward Transaction", type="primary", use_container_width=True):
+            if r_name and r_nrc:
+                try:
+                    check_bl = supabase.table("blacklist").select("name").eq("nrcno", r_nrc).execute()
+                    if len(check_bl.data) > 0:
+                        st.error(f"❌ Blacklisted User: {check_bl.data[0]['name']}")
+                    else:
+                        new_data = {
+                            "branch": branch, "transaction_no": trans_no, "r_name": r_name, "r_nrc": r_nrc,
+                            "r_address": r_address, "r_phone": r_phone, "r_purpose": r_purpose, "r_state": r_state,
+                            "r_withdraw_point": r_point, "r_remark": r_remark, "s_name": s_name, "s_id": s_id,
+                            "s_country": s_country, "currency": currency, "amount": float(amount), "mmk_rate": float(mmk_rate),
+                            "mmk_allowance": float(mmk_allowance), "usd_equiv": float(usd_equiv) if usd_equiv else 0,
+                            "total_mmk": float(calc_total_mmk)
+                        }
+                        response = supabase.table("inward_transactions").insert(new_data).execute()
+                        if response.data:
+                            # Slip ထဲမှာ ပြသရန်အတွက် ဒေတာများကို ခေတ္တသိမ်းဆည်းခြင်း
+                            st.session_state.slip_data = new_data
+                            st.session_state.slip_data['date_time'] = now_yangon.strftime('%Y-%m-%d %H:%M:%S')
+                            st.session_state.show_slip = True
                             st.rerun()
-                            
-                        st.stop() # Slip ကို ဝန်ထမ်းက မြင်အောင် ခေတ္တရပ်ထားပြီး "Done" နှိပ်မှ Form ရှင်းစေရန်
-                        # --- 📄 PAYOUT SLIP DISPLAY END ---
-                        import time
-                        time.sleep(1.5)
-                        st.rerun()
-            except Exception as e:
-                st.error(f"Database Error: {e}")
-        else:
-            st.warning("⚠️ Receiver Name နှင့် NRC ကို ဖြည့်စွက်ပါ။")
+                except Exception as e:
+                    st.error(f"Database Error: {e}")
+            else:
+                st.warning("⚠️ Receiver Name နှင့် NRC ကို ဖြည့်စွက်ပါ။")
+
+    # =========================================================================
+    # 📄 PAYOUT SLIP DISPLAY & PRINT MODE (Save နှိပ်ပြီးမှ သီးသန့်ပွင့်လာမည့်အပိုင်း)
+    # =========================================================================
+    else:
+        sd = st.session_state.slip_data
+        st.success("✅ ဒေတာကို အောင်မြင်စွာ သိမ်းဆည်းပြီးပါပြီ။")
+        st.balloons()
+        
+        st.markdown("---")
+        st.subheader("📄 International Remittance - Payout Slip")
+        
+        # ၁။ မျက်နှာပြင်ပေါ်တွင် ကတ်ပြားပုံစံ လှလှပပ ပြသခြင်း
+        with st.container(border=True):
+            st.markdown(f"### **Transaction No:** `{sd['transaction_no']}`")
+            st.markdown(f"**Branch:** {sd['branch']} | **Date & Time:** {sd['date_time']}")
+            st.divider()
+            
+            sc1, sc2 = st.columns(2)
+            with sc1:
+                st.markdown("#### 🔵 Receiver Details")
+                st.markdown(f"**Name:** {sd['r_name']}")
+                st.markdown(f"**NRC:** {sd['r_nrc']}")
+                st.markdown(f"**Phone:** {sd['r_phone']}")
+                st.markdown(f"**Address:** {sd['r_address']}, {sd['r_state']}")
+                st.markdown(f"**Withdraw Point:** {sd['r_withdraw_point']}")
+            with sc2:
+                st.markdown("#### 🟢 Sender Details")
+                st.markdown(f"**Name:** {sd['s_name']}")
+                st.markdown(f"**ID/Passport:** {sd['s_id']}")
+                st.markdown(f"**Country:** {sd['s_country']}")
+                st.markdown(f"**Purpose:** {sd['r_purpose']}")
+            st.divider()
+            st.info(f"## **Total Payout Amount:** {sd['total_mmk']:,.2f} MMK")
+
+        # ၂။ စာရွက်ဖြင့် Print ထုတ်ရန်အတွက် ကွန်ပျူတာ Printer စနစ်သို့ HTML/JS ဖြင့် လှမ်းချိတ်ခြင်း
+        # ဤစနစ်သည် Print ဆွဲလိုက်လျှင် မလိုအပ်သော Sidebar များကို ဖျောက်ပြီး Slip ကိုပဲ သေသပ်စွာ ထုတ်ပေးပါမည်
+        html_code = f"""
+        <script>
+        function printSlip() {{
+            var printContents = document.getElementById('print-area').innerHTML;
+            var originalContents = document.body.innerHTML;
+            document.body.innerHTML = printContents;
+            window.print();
+            document.body.innerHTML = originalContents;
+            window.location.reload();
+        }}
+        </script>
+        <div id="print-area" style="padding:20px; font-family:sans-serif; color:#000; background:#fff; border:1px solid #ccc; max-width:600px; margin:auto;">
+            <h2 style="text-align:center; margin-bottom:5px;">PAYOUT SLIP (REMITTANCE)</h2>
+            <p style="text-align:center; font-size:12px; margin-top:0;">Transaction No: <b>{sd['transaction_no']}</b></p>
+            <hr>
+            <p><b>Date:</b> {sd['date_time']} | <b>Branch:</b> {sd['branch']}</p>
+            <table style="width:100%; border-collapse:collapse; margin-top:15px;">
+                <tr>
+                    <td style="width:50%; vertical-align:top; padding:5px; border:1px solid #ddd;">
+                        <h4>[ RECEIVER INFO ]</h4>
+                        <p>Name: {sd['r_name']}<br>NRC: {sd['r_nrc']}<br>Phone: {sd['r_phone']}<br>Point: {sd['r_withdraw_point']}</p>
+                    </td>
+                    <td style="width:50%; vertical-align:top; padding:5px; border:1px solid #ddd;">
+                        <h4>[ SENDER INFO ]</h4>
+                        <p>Name: {sd['s_name']}<br>ID/Pass: {sd['s_id']}<br>Country: {sd['s_country']}<br>Purpose: {sd['r_purpose']}</p>
+                    </td>
+                </tr>
+            </table>
+            <div style="margin-top:20px; padding:15px; background:#f4f4f4; text-align:center; border:1px solid #ccc;">
+                <h3 style="margin:0;">TOTAL PAYOUT AMOUNT</h3>
+                <h2 style="margin:5px 0 0 0; color:#d9534f;">{sd['total_mmk']:,.2f} MMK</h2>
+            </div>
+            <br><br>
+            <table style="width:100%; text-align:center; margin-top:30px;">
+                <tr>
+                    <td>____________________<br>Staff Signature</td>
+                    <td>____________________<br>Customer Signature</td>
+                </tr>
+            </table>
+        </div>
+        """
+        
+        # Print ထုတ်မည့် HTML ပုံစံကို Expander အနေဖြင့် အောက်တွင် ဖော်ပြပေးထားပါသည်
+        with st.expander("🖨️ Preview Print Layout (A4/Receipt)", expanded=False):
+            st.components.v1.html(html_code + "<br><button onclick='printSlip()' style='width:100%; padding:10px; background-color:#ff4b4b; color:white; border:none; border-radius:4px; font-weight:bold; cursor:pointer;'>🖨️ Click to Print Payout Slip</button>", height=520, scrolling=True)
+
+        # ၃။ DONE ကို နှိပ်လိုက်ပါက Form Data အားလုံးကို အလိုအလျောက် Clear လုပ်ပြီး Form အသစ်သို့ ပြန်သွားခြင်း
+        if st.button("🔄 Done & Clear Form (ဒေတာအသစ်သွင်းရန်)", type="primary", use_container_width=True):
+            # Session state value များကို အကုန်လုံး Reset အဖြူထည် ပြန်လုပ်ခြင်း
+            st.session_state.r_name_val = ""
+            st.session_state.r_nrc_val = ""
+            st.session_state.r_addr_val = ""
+            st.session_state.r_ph_val = ""
+            st.session_state.r_point_val = ""
+            st.session_state.r_remark_val = ""
+            st.session_state.s_name_val = ""
+            st.session_state.s_id_val = ""
+            st.session_state.amount_val = 0.0
+            st.session_state.mmk_rate_val = 0.0
+            st.session_state.mmk_allow_val = 0.0
+            st.session_state.usd_equiv_val = 0.0
+            st.session_state.total_mmk_val = 0.0
+            
+            # Slip ပိတ်ပြီး မူရင်း Form ဆီ ပြန်သွားစေခြင်း
+            st.session_state.show_slip = False
+            st.session_state.slip_data = {}
+            st.rerun()
 
 # --- ⚙️ System Control Page Logic ---
 elif page == "⚙️ System Control":
