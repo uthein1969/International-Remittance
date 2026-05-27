@@ -137,7 +137,7 @@ if page == "📊 Dashboard":
         display_currency_summary(df_daily)
     with d_card2.container(border=True):
         st.markdown("🔢 **Transaction Count**")
-        st.markdown(f"### {daily_count} ကြိမ်")
+        st.markdown(f"### {daily_count}")
 
     st.divider()
 
@@ -179,7 +179,7 @@ if page == "📊 Dashboard":
         display_currency_summary(df_monthly)
     with m_card2.container(border=True):
         st.markdown("🔢 **Transaction Count**")
-        st.markdown(f"### {monthly_count} ကြိမ်")
+        st.markdown(f"### {monthly_count}")
 
     st.divider()
 
@@ -216,7 +216,7 @@ if page == "📊 Dashboard":
         display_currency_summary(df_yearly)
     with y_card2.container(border=True):
         st.markdown("🔢 **Transaction Count**")
-        st.markdown(f"### {yearly_count} ကြိမ်")
+        st.markdown(f"### {yearly_count}")
     
 # --- ၅။ Search Transactions Page Logic ---
 elif page == "🔍 Search Transactions":
