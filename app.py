@@ -3,6 +3,7 @@ import streamlit as st
 import pytz
 from supabase import create_client, Client
 from datetime import datetime
+
 st.set_page_config(layout="wide")
 
 yangon_tz = pytz.timezone('Asia/Yangon')
@@ -15,11 +16,12 @@ def safe_float(val):
         return float(val)
     except (ValueError, TypeError):
         return 0.0
-
+    
+def get_supabase_client():
 # --- ၁။ Setup & Connections ---
-URL = st.secrets["SUPABASE_URL"]
-KEY = st.secrets["SUPABASE_KEY"]
-supabase: Client = create_client(URL, KEY)
+    URL = st.secrets["SUPABASE_URL"]
+    KEY = st.secrets["SUPABASE_KEY"]
+    return create_client(URL, KEY)
 
 
 if 'logged_in' not in st.session_state:
@@ -36,8 +38,10 @@ if not st.session_state['logged_in']:
         
         if submit_btn:
             try:
+                # 💡 Login ခလုတ်နှိပ်လိုက်ပြီဆိုမှ Supabase ဆီကို အမှားကင်းကင်း တိုက်ရိုက် လှမ်းချိတ်ခိုင်းခြင်း
+                supabase_db = get_supabase_client()
                 
-                res = supabase.table("user_setup")\
+                res = supabase_db.table("user_setup")\
                     .select("*")\
                     .eq("user_id", input_user)\
                     .eq("password", input_pass)\
@@ -53,7 +57,7 @@ if not st.session_state['logged_in']:
             except Exception as e:
                 st.error(f"Login Error: {e}")
     
-    st.stop() 
+    st.stop()
 
 # --- ၃။ Main System  ---
 st.sidebar.success("Logged In ✅")
