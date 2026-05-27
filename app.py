@@ -118,7 +118,7 @@ if page == "📊 Dashboard":
 
     d_card1, d_card2 = st.columns(2)
     d_card1.info(f"### {daily_inward:,.2f} MMK \n 📉 Daily Inward Total")
-    d_card2.info(f"### {daily_count} ကြိမ် \n 🔢 Daily Transaction Count")
+    d_card2.info(f"### {daily_count} Record \n 🔢 Daily Transaction Count")
 
     st.divider()
 
@@ -160,7 +160,7 @@ if page == "📊 Dashboard":
 
     m_card1, m_card2 = st.columns(2)
     m_card1.warning(f"### {monthly_inward:,.2f} MMK \n 📈 {from_m_name} to {to_m_name} Total ({selected_m_year})")
-    m_card2.warning(f"### {monthly_count} ကြိမ် \n 🔢 Filtered Months Transaction Count")
+    m_card2.warning(f"### {monthly_count} Record \n 🔢 Filtered Months Transaction Count")
 
     st.divider()
 
@@ -196,7 +196,7 @@ if page == "📊 Dashboard":
 
     y_card1, y_card2 = st.columns(2)
     y_card1.error(f"### {yearly_inward:,.2f} MMK \n 📊 Years {from_year} to {to_year} Total")
-    y_card2.error(f"### {yearly_count} ကြိမ် \n 🔢 Filtered Years Transaction Count")
+    y_card2.error(f"### {yearly_count} Record \n 🔢 Filtered Years Transaction Count")
     
 # --- ၅။ Search Transactions Page Logic ---
 elif page == "🔍 Search Transactions":
@@ -210,7 +210,7 @@ elif page == "🔍 Search Transactions":
         with col2:
             e_date = st.date_input("End Date", value=now_yangon.date()) #
         with col3:
-            # 💡 လိုင်း ၂၁၃ ကို st.button လို့ စာလုံးပေါင်းအမှား ပြင်ဆင်ထားပါတယ်ဗျာ
+            
             btn_search = st.button("Search Now", type="primary", use_container_width=True) #
 
     try:
