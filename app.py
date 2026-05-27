@@ -71,15 +71,14 @@ page = st.sidebar.radio("Go to:",
 st.sidebar.markdown("---")
 st.sidebar.info("System Version 2.0v")
 
-# --- ၄။ Dashboard Page ---
-# --- ၄။ Dashboard Page (From Month to To Month / From Year to To Year ရွေးချယ်မှု ပါဝင်ပြီး) ---
+# --- ၄။ Dashboard Page (Currency အလိုက် သီးသန့် စာရင်းခွဲပြသခြင်းစနစ်) ---
 if page == "📊 Dashboard":
     st.title("📈 Transaction Dashboard")
     st.markdown(f"**Last Updated:** {now_yangon.strftime('%Y-%m-%d %H:%M:%S')} (Yangon Time)")
 
-    # --- ၁။ Supabase မှ မူရင်းဒေတာ အားလုံးကို ကြိုတင်ဆွဲထုတ်ခြင်း ---
+    # --- ၁။ Supabase မှ ဒေတာအားလုံးကို ကြိုတင်ဆွဲထုတ်ခြင်း ---
     try:
-        res = supabase.table("inward_transactions").select("amount, created_at").execute()
+        res = supabase.table("inward_transactions").select("amount, total_mmk, currency, created_at").execute()
         if res.data:
             df_dash = pd.DataFrame(res.data)
             df_dash['created_at'] = pd.to_datetime(df_dash['created_at']).dt.tz_convert('Asia/Yangon')
@@ -87,10 +86,26 @@ if page == "📊 Dashboard":
             df_dash['Year'] = df_dash['created_at'].dt.year
             df_dash['Month_Num'] = df_dash['created_at'].dt.month
         else:
-            df_dash = pd.DataFrame(columns=["amount", "created_at", "Date", "Year", "Month_Num"])
+            df_dash = pd.DataFrame(columns=["amount", "total_mmk", "currency", "created_at", "Date", "Year", "Month_Num"])
     except Exception as e:
         st.error(f"❌ Database Error: {e}")
-        df_dash = pd.DataFrame(columns=["amount", "created_at", "Date", "Year", "Month_Num"])
+        df_dash = pd.DataFrame(columns=["amount", "total_mmk", "currency", "created_at", "Date", "Year", "Month_Num"])
+
+    # 💡 Currency အလိုက် စာရင်းခွဲထုတ်ပေးမည့် Helper Function
+    def display_currency_summary(df_filtered):
+        if df_filtered.empty:
+            st.markdown("<span style='color:gray;'>ဒီကာလအတွင်း ငွေလွှဲဒေတာ မရှိပါ။</span>", unsafe_allow_html=True)
+            return
+        
+        # Currency အလိုက် Group ဖွဲ့ပြီး ပေါင်းခြင်း
+        summary = df_filtered.groupby('currency').agg({
+            'amount': 'sum',
+            'total_mmk': 'sum'
+        }).reset_index()
+        
+        # စာရင်းများကို Layout အလှပုံစံဖြင့် ထုတ်ပြခြင်း
+        for idx, row in summary.iterrows():
+            st.markdown(f"💰 **{row['amount']:,.2f} {row['currency']}** *(≈ {row['total_mmk']:,.2f} MMK)*")
 
     st.divider()
 
@@ -106,33 +121,35 @@ if page == "📊 Dashboard":
         with col_d2:
             d_e_date = st.date_input("To Date", value=now_yangon.date(), key="d_e")
         with col_d3:
-            btn_d_search = st.button("🔍 Search", type="primary", use_container_width=True, key="btn_d")
+            btn_d_search = st.button("🔍 Search Daily", type="primary", use_container_width=True, key="btn_d")
 
     if not df_dash.empty:
         d_mask = (df_dash['Date'] >= d_s_date) & (df_dash['Date'] <= d_e_date)
         df_daily = df_dash.loc[d_mask]
-        daily_inward = df_daily['amount'].sum()
         daily_count = len(df_daily)
     else:
-        daily_inward = daily_count = 0
+        df_daily = pd.DataFrame()
+        daily_count = 0
 
-    d_card1, d_card2 = st.columns(2)
-    d_card1.info(f"### {daily_inward:,.2f} MMK \n 📉 Daily Inward Total")
-    d_card2.info(f"### {daily_count} Transaction \n 🔢 Daily Transaction Count")
+    d_card1, d_card2 = st.columns([2, 1])
+    with d_card1.container(border=True):
+        st.markdown("📉 **Daily Inward Subtotals (Currency အလိုက်)**")
+        display_currency_summary(df_daily)
+    with d_card2.container(border=True):
+        st.markdown("🔢 **Transaction Count**")
+        st.markdown(f"### {daily_count} ကြိမ်")
 
     st.divider()
 
     # =========================================================================
-    # 📈 (၂) MONTHLY TRANSACTION SECTION (From Month to To Month ပြင်ဆင်ပြီး)
+    # 📈 (၂) MONTHLY TRANSACTION SECTION
     # =========================================================================
     st.subheader("📅 Monthly Transaction (From Month to To Month)")
     
-    # ရွေးချယ်ရမည့် လများစာရင်း
     months_list = ["January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"]
     current_month_name = months_list[now_yangon.month - 1]
 
     with st.container(border=True):
-        # နှစ်ကို ရွေးချယ်ခြင်း (လအလိုက် ရှာဖွေရာတွင် သက်ဆိုင်ရာ နှစ်အတွင်း၌သာ ရှာရန်)
         m_year_options = sorted(df_dash['Year'].unique().tolist()) if not df_dash.empty else [now_yangon.year]
         if now_yangon.year not in m_year_options:
             m_year_options.append(now_yangon.year)
@@ -146,30 +163,31 @@ if page == "📊 Dashboard":
             to_m_name = st.selectbox("To Month", months_list, index=months_list.index(current_month_name), key="to_m")
             to_m_num = months_list.index(to_m_name) + 1
         with col_m3:
-            btn_m_search = st.button("🔍 Search", type="primary", use_container_width=True, key="btn_m")
+            btn_m_search = st.button("🔍 Search Months", type="primary", use_container_width=True, key="btn_m")
 
-    # Monthly Range Calculation
     if not df_dash.empty:
-        # သတ်မှတ်ထားသော နှစ်အတွင်း From Month နှင့် To Month ကြားရှိ ဒေတာများကို Filter ဖြတ်ခြင်း
         m_mask = (df_dash['Year'] == selected_m_year) & (df_dash['Month_Num'] >= from_m_num) & (df_dash['Month_Num'] <= to_m_num)
         df_monthly = df_dash.loc[m_mask]
-        monthly_inward = df_monthly['amount'].sum()
         monthly_count = len(df_monthly)
     else:
-        monthly_inward = monthly_count = 0
+        df_monthly = pd.DataFrame()
+        monthly_count = 0
 
-    m_card1, m_card2 = st.columns(2)
-    m_card1.warning(f"### {monthly_inward:,.2f} MMK \n 📈 {from_m_name} to {to_m_name} Total ({selected_m_year})")
-    m_card2.warning(f"### {monthly_count} Transaction \n 🔢 Filtered Months Transaction Count")
+    m_card1, m_card2 = st.columns([2, 1])
+    with m_card1.container(border=True):
+        st.markdown(f"📈 **Monthly Inward Subtotals ({from_m_name} to {to_m_name})**")
+        display_currency_summary(df_monthly)
+    with m_card2.container(border=True):
+        st.markdown("🔢 **Transaction Count**")
+        st.markdown(f"### {monthly_count} ကြိမ်")
 
     st.divider()
 
     # =========================================================================
-    # 📊 (၃) YEARLY TRANSACTION SECTION (From Year to To Year ပြင်ဆင်ပြီး)
+    # 📊 (၃) YEARLY TRANSACTION SECTION
     # =========================================================================
     st.subheader("📊 Yearly Transaction (From Year to To Year)")
     
-    # Database ထဲရှိသမျှ ခုနှစ်စာရင်းကို ဆွဲထုတ်ခြင်း
     year_options = sorted(df_dash['Year'].unique().tolist()) if not df_dash.empty else [now_yangon.year]
     if now_yangon.year not in year_options:
         year_options.append(now_yangon.year)
@@ -182,21 +200,23 @@ if page == "📊 Dashboard":
         with col_y2:
             to_year = st.selectbox("To Year", year_options, index=len(year_options)-1, key="to_yr")
         with col_y3:
-            btn_y_search = st.button("🔍 Search", type="primary", use_container_width=True, key="btn_y")
+            btn_y_search = st.button("🔍 Search Years", type="primary", use_container_width=True, key="btn_y")
 
-    # Yearly Range Calculation
     if not df_dash.empty:
-        # From Year နှင့် To Year ကြားရှိ ဒေတာများကို Filter ဖြတ်ခြင်း
         y_mask = (df_dash['Year'] >= from_year) & (df_dash['Year'] <= to_year)
         df_yearly = df_dash.loc[y_mask]
-        yearly_inward = df_yearly['amount'].sum()
         yearly_count = len(df_yearly)
     else:
-        yearly_inward = yearly_count = 0
+        df_yearly = pd.DataFrame()
+        yearly_count = 0
 
-    y_card1, y_card2 = st.columns(2)
-    y_card1.error(f"### {yearly_inward:,.2f} MMK \n 📊 Years {from_year} to {to_year} Total")
-    y_card2.error(f"### {yearly_count} Transaction \n 🔢 Filtered Years Transaction Count")
+    y_card1, y_card2 = st.columns([2, 1])
+    with y_card1.container(border=True):
+        st.markdown(f"📊 **Yearly Inward Subtotals ({from_year} to {to_year})**")
+        display_currency_summary(df_yearly)
+    with y_card2.container(border=True):
+        st.markdown("🔢 **Transaction Count**")
+        st.markdown(f"### {yearly_count} ကြိမ်")
     
 # --- ၅။ Search Transactions Page Logic ---
 elif page == "🔍 Search Transactions":
