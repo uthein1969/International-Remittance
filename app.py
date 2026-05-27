@@ -118,7 +118,7 @@ if page == "📊 Dashboard":
 
     d_card1, d_card2 = st.columns(2)
     d_card1.info(f"### {daily_inward:,.2f} MMK \n 📉 Daily Inward Total")
-    d_card2.info(f"### {daily_count} Record \n 🔢 Daily Transaction Count")
+    d_card2.info(f"### {daily_count} Transaction \n 🔢 Daily Transaction Count")
 
     st.divider()
 
@@ -160,7 +160,7 @@ if page == "📊 Dashboard":
 
     m_card1, m_card2 = st.columns(2)
     m_card1.warning(f"### {monthly_inward:,.2f} MMK \n 📈 {from_m_name} to {to_m_name} Total ({selected_m_year})")
-    m_card2.warning(f"### {monthly_count} Record \n 🔢 Filtered Months Transaction Count")
+    m_card2.warning(f"### {monthly_count} Transaction \n 🔢 Filtered Months Transaction Count")
 
     st.divider()
 
@@ -196,12 +196,12 @@ if page == "📊 Dashboard":
 
     y_card1, y_card2 = st.columns(2)
     y_card1.error(f"### {yearly_inward:,.2f} MMK \n 📊 Years {from_year} to {to_year} Total")
-    y_card2.error(f"### {yearly_count} Record \n 🔢 Filtered Years Transaction Count")
+    y_card2.error(f"### {yearly_count} Transaction \n 🔢 Filtered Years Transaction Count")
     
 # --- ၅။ Search Transactions Page Logic ---
 elif page == "🔍 Search Transactions":
     st.title("🔍 Search & Filter Transactions")
-    st.markdown("ရက်စွဲအလိုက် ငွေလွှဲစာရင်းများကို ရှာဖွေရန်")
+    st.markdown("Search for transactions by date")
 
     with st.container(border=True):
         col1, col2, col3 = st.columns([2, 2, 1.2], vertical_alignment="bottom") #
@@ -231,11 +231,11 @@ elif page == "🔍 Search Transactions":
                     csv = result_df.to_csv(index=False).encode('utf-8')
                     st.download_button("📥 Download as CSV", data=csv, file_name="search_results.csv", mime="text/csv")
                 else:
-                    st.warning("ရွေးချယ်ထားသော ရက်စွဲအတွင်း ဒေတာမရှိပါ။")
+                    st.warning("No data available for the selected date.")
             else:
-                st.info("ရှာဖွေရန် ရက်စွဲရွေးပြီး Search Now ကို နှိပ်ပါ။")
+                st.info("Select Date and press Search Now Button")
         else:
-            st.info("Database ထဲတွင် ဒေတာမရှိသေးပါ။")
+            st.info("No Data in Database")
     except Exception as e:
         st.error(f"Search Error: {e}")
 
@@ -283,7 +283,7 @@ elif page == "📋 Blacklist Info":
                 try:
                     check_exists = supabase.table("blacklist").select("nrcno").eq("nrcno", full_nrc).execute()
                     if check_exists.data:
-                        st.error(f"❌ '{full_nrc}' သည် Database ထဲတွင် ရှိနှင့်ပြီးသားဖြစ်ပါသည်")
+                        st.error(f"❌ '{full_nrc}' is already exists")
                     else:
                         supabase.table("blacklist").insert({"name": name, "nrcno": full_nrc, "remark": reason}).execute()
                         st.success("✅ Saved Successfully!")
@@ -296,7 +296,7 @@ elif page == "📋 Blacklist Info":
                 except Exception as e:
                     st.error(f"Save Error: {e}")
             else:
-                st.warning("⚠️ ကျေးဇူးပြု၍ အချက်အလက်များ ပြည့်စုံစွာ ဖြည့်စွက်ပေးပါ။")
+                st.warning("⚠️ Pls Fill Complete Information")
 
     st.subheader("🛠️ Search & Edit/Delete Blacklist")
     search_query = st.text_input("Search by Name or NRC", placeholder="ဥပမာ- 13/nakhana")
@@ -458,7 +458,7 @@ elif page == "🏦 Inward Transaction":
     # =========================================================================
     else:
         sd = st.session_state.slip_data
-        st.success("✅ ဒေတာကို အောင်မြင်စွာ သိမ်းဆည်းပြီးပါပြီ။")
+        st.success("✅ Save Successfully")
         st.balloons()
         
         st.markdown("---")
@@ -536,7 +536,7 @@ elif page == "🏦 Inward Transaction":
             st.components.v1.html(html_code + "<br><button onclick='printSlip()' style='width:100%; padding:10px; background-color:#ff4b4b; color:white; border:none; border-radius:4px; font-weight:bold; cursor:pointer;'>🖨️ Click to Print Payout Slip</button>", height=520, scrolling=True)
 
         # ၃။ DONE ကို နှိပ်လိုက်ပါက Form Data အားလုံးကို အလိုအလျောက် Clear လုပ်ပြီး Form အသစ်သို့ ပြန်သွားခြင်း
-        if st.button("🔄 Done & Clear Form (ဒေတာအသစ်သွင်းရန်)", type="primary", use_container_width=True):
+        if st.button("🔄 Done & New Data Input", type="primary", use_container_width=True):
             # Session state value များကို အကုန်လုံး Reset အဖြူထည် ပြန်လုပ်ခြင်း
             st.session_state.r_name_val = ""
             st.session_state.r_nrc_val = ""
