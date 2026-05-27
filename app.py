@@ -19,7 +19,7 @@ def safe_float(val):
     
 # --- ၁။ Setup & Connections (အမှားကင်းဆုံးစနစ် ပြင်ဆင်ခြင်း) ---
 def get_supabase_client():
-    URL = "https://3.220.158.125"
+    URL = st.secrets["SUPABASE_URL"]
     KEY = st.secrets["SUPABASE_KEY"]
     return create_client(URL, KEY)
 
