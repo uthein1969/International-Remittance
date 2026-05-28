@@ -142,8 +142,7 @@ if not st.session_state.logged_in:
     login_page()
     st.stop()
 
-# ================= AFTER LOGIN ONLY =================
-
+# ================= AFTER LOGIN =================
 menu = st.sidebar.radio(
     "📌 Menu",
     [
@@ -155,7 +154,7 @@ menu = st.sidebar.radio(
     ]
 )
 
-# Logout (SEPARATE - NOT INSIDE ANY IF)
+# Logout
 if st.sidebar.button("Logout"):
     st.session_state.logged_in = False
     st.rerun()
@@ -171,10 +170,10 @@ elif menu == "🏦 Inward":
     inward()
 
 elif menu == "📋 Blacklist":
-    st.title("Blacklist Module")
+    st.title("📋 Blacklist Module (Coming Soon)")
 
 elif menu == "⚙️ System":
-    st.title("System Module")
+    st.title("⚙️ System Module (Coming Soon)")
 
 # ================= Search_Transaction =================
 def search_transactions():
@@ -251,10 +250,10 @@ def inward():
         new_no = "0001"
         if last.data:
             new_no = str(int(last.data[0]["transaction_no"]) + 1).zfill(4)
+
     except:
         new_no = "0001"
 
-    # FORM
     with st.form("inward_form"):
         branch = st.selectbox("Branch", ["Yangon", "Mandalay", "NPT"])
 
@@ -278,17 +277,16 @@ def inward():
 
         total = (amount * rate) + allow
 
-        st.markdown(f"### Total: {total:,.2f}")
+        st.markdown(f"### 💰 Total: {total:,.2f}")
 
         submitted = st.form_submit_button("Save")
 
-    # SAVE
     if submitted:
         try:
             check = supabase.table("blacklist").select("*").eq("nrcno", r_nrc).execute()
 
             if check.data:
-                st.error("BLACKLISTED")
+                st.error("❌ BLACKLISTED")
                 return
 
             supabase.table("inward_transactions").insert({
@@ -316,6 +314,3 @@ def inward():
 
         except Exception as e:
             st.error(f"Save Error: {e}")
-
-
-
