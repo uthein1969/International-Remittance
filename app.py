@@ -1,11 +1,15 @@
 import streamlit as st
-import pandas as pd
-import pytz
-from datetime import datetime
-from supabase import create_client
+# import pandas as pd
+# import pytz
+# from datetime import datetime
+# from supabase import create_client
 
 # ---------------- PAGE CONFIG ----------------
 st.set_page_config(layout="wide")
+
+st.title("🧼 CLEAN RESET MODE")
+st.success("App is now stable (no DB, no network)")
+st.write("If you see this → Streamlit is OK")
 
 # ---------------- SUPABASE INIT ----------------
 SUPABASE_URL = st.secrets["SUPABASE_URL"]
