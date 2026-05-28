@@ -16,12 +16,15 @@ def safe_float(val):
         return float(val)
     except (ValueError, TypeError):
         return 0.0
-    
+    st.write(st.secrets)    
 # --- ၁။ Setup & Connections (အမှားကင်းဆုံးစနစ် ပြင်ဆင်ခြင်း) ---
 def get_supabase_client():
     URL = st.secrets["SUPABASE_URL"]
     KEY = st.secrets["SUPABASE_KEY"]
+    st.write("URL =", url)
+
     return create_client(URL, KEY)
+st.success("Connected!")
 
 # 💡 လော့ဂ်အင် ဝင်သည်ဖြစ်စေ၊ မဝင်သည်ဖြစ်စေ အောက်က စာမျက်နှာများပါ လှမ်းသုံးနိုင်ရန် စတင်ချိတ်ဆက်ခြင်း
 try:
