@@ -33,11 +33,11 @@ if not st.session_state["logged_in"]:
 
     st.title("🔐 Admin Login")
     try:
-    test = supabase.table("user_setup").select("*").execute()
-    st.write(test.data)
+        test = supabase.table("user_setup").select("*").execute()
+        st.write(test.data)
 
     except Exception as e:
-    st.error(e)
+        st.error(e)
 
     with st.form("login_form"):
 
