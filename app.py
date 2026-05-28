@@ -54,7 +54,7 @@ def login_page():
 
         except Exception as e:
             st.error(f"DB Error: {e}")
-            
+
 # STEP 3 — DASHBOARD (MINIMUM SAFE VERSION)
 def dashboard():
     st.title("📈 Transaction Dashboard")
@@ -82,3 +82,14 @@ def dashboard():
 
     except Exception as e:
         st.error(f"DB Error: {e}")
+
+# STEP 4 — MAIN ROUTER
+if not st.session_state.logged_in:
+    login_page()
+else:
+    dashboard()
+
+    if st.sidebar.button("Logout"):
+        st.session_state.logged_in = False
+        st.session_state.username = ""
+        st.rerun()
