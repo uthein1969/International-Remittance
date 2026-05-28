@@ -55,22 +55,89 @@ def login_page():
 
 # ================= DASHBOARD =================
 def dashboard():
-    st.title("📈 Transaction Dashboard")
-    st.success(f"Welcome {st.session_state.username}")
+    st.title("📊 Transaction Dashboard")
 
-    st.markdown(f"Last Updated: {now_yangon.strftime('%Y-%m-%d %H:%M:%S')}")
+    if supabase is None:
+        st.error("Supabase not connected")
+        return
 
     try:
         res = supabase.table("inward_transactions").select("*").execute()
-        df = pd.DataFrame(res.data or [])
+        data = res.data or []
+
+        df = pd.DataFrame(data)
 
         if df.empty:
             st.warning("No transactions found")
-        else:
-            st.dataframe(df)
+            return
+
+        # ================= DATE CONVERT =================
+        df["created_at"] = pd.to_datetime(df["created_at"])
+        df["Date"] = df["created_at"].dt.date
+        df["Month"] = df["created_at"].dt.to_period("M")
+        df["Year"] = df["created_at"].dt.year
+
+        # ================= FILTER TABS =================
+        tab1, tab2, tab3 = st.tabs(["📅 Daily", "📆 Monthly", "📊 Yearly"])
+
+        # ================= DAILY =================
+        with tab1:
+            st.subheader("📅 Daily Report")
+
+            selected_date = st.date_input("Select Date")
+
+            daily_df = df[df["Date"] == selected_date]
+
+            st.metric("Transactions", len(daily_df))
+            st.metric("Total MMK", f"{daily_df['total_mmk'].sum():,.2f}")
+
+            st.dataframe(daily_df)
+
+        # ================= MONTHLY =================
+        with tab2:
+            st.subheader("📆 Monthly Report")
+
+            month_list = sorted(df["Month"].astype(str).unique())
+            selected_month = st.selectbox("Select Month", month_list)
+
+            monthly_df = df[df["Month"].astype(str) == selected_month]
+
+            st.metric("Transactions", len(monthly_df))
+            st.metric("Total MMK", f"{monthly_df['total_mmk'].sum():,.2f}")
+
+            st.dataframe(monthly_df)
+
+        # ================= YEARLY =================
+        with tab3:
+            st.subheader("📊 Yearly Report")
+
+            year_list = sorted(df["Year"].unique())
+            selected_year = st.selectbox("Select Year", year_list)
+
+            yearly_df = df[df["Year"] == selected_year]
+
+            st.metric("Transactions", len(yearly_df))
+            st.metric("Total MMK", f"{yearly_df['total_mmk'].sum():,.2f}")
+
+            st.dataframe(yearly_df)
+
+        # ================= SUMMARY CARDS =================
+        st.divider()
+        st.subheader("📌 Overall Summary")
+
+        c1, c2, c3 = st.columns(3)
+
+        with c1:
+            st.metric("Total Transactions", len(df))
+
+        with c2:
+            st.metric("Total MMK Volume", f"{df['total_mmk'].sum():,.2f}")
+
+        with c3:
+            st.metric("Avg Transaction", f"{df['total_mmk'].mean():,.2f}")
 
     except Exception as e:
-        st.error(f"DB Error: {e}")
+        st.error(f"Dashboard Error: {e}")
 
 # ================= LOGIN GATE =================
 if not st.session_state.logged_in:
