@@ -1,13 +1,19 @@
-import pandas as pd
 import streamlit as st
+
+st.set_page_config(layout="wide")
+
+import pandas as pd
 import pytz
 from supabase import create_client
 from datetime import datetime
 import requests
-st.write(requests.get("https://google.com").status_code)
-st.write(requests.get("https://supabase.com").status_code)
-# ---------------- PAGE CONFIG ----------------
-st.set_page_config(layout="wide")
+
+# ---------------- TEST INTERNET ----------------
+try:
+    st.write("Google:", requests.get("https://google.com").status_code)
+    st.write("Supabase:", requests.get("https://supabase.com").status_code)
+except Exception as e:
+    st.error(f"Network error: {e}")
 
 # ---------------- TIMEZONE ----------------
 yangon_tz = pytz.timezone("Asia/Yangon")
@@ -17,11 +23,9 @@ now_yangon = datetime.now(yangon_tz)
 url = st.secrets["SUPABASE_URL"]
 key = st.secrets["SUPABASE_KEY"]
 
-# IMPORTANT
-supabase = create_client(
-    supabase_url=url,
-    supabase_key=key
-)
+supabase = create_client(url, key)
+
+st.success("Supabase client created")
 
 # ---------------- SESSION ----------------
 if "logged_in" not in st.session_state:
