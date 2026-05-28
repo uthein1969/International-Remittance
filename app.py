@@ -1,7 +1,17 @@
 import streamlit as st
+import pytz
+from datetime import datetime
 
 # ---------------- PAGE CONFIG ----------------
 st.set_page_config(layout="wide")
+
+# ---------------- SUPABASE (optional for now safe init) ----------------
+SUPABASE_URL = st.secrets.get("SUPABASE_URL", "")
+SUPABASE_KEY = st.secrets.get("SUPABASE_KEY", "")
+
+# ---------------- TIMEZONE ----------------
+yangon_tz = pytz.timezone("Asia/Yangon")
+now_yangon = datetime.now(yangon_tz)
 
 # ---------------- SESSION STATE ----------------
 if "logged_in" not in st.session_state:
@@ -10,7 +20,7 @@ if "logged_in" not in st.session_state:
 if "username" not in st.session_state:
     st.session_state["username"] = ""
 
-# ---------------- DEMO USERS (SAFE TEST) ----------------
+# ---------------- DEMO USERS (SAFE TEST MODE) ----------------
 USERS = {
     "admin": "pass123",
     "user": "1234"
@@ -24,7 +34,7 @@ if not st.session_state["logged_in"]:
     input_user = st.text_input("User ID")
     input_pass = st.text_input("Password", type="password")
 
-    if st.button("Login"):
+    if st.button("Login", key="login_btn"):
 
         if input_user in USERS and USERS[input_user] == input_pass:
 
@@ -32,7 +42,6 @@ if not st.session_state["logged_in"]:
             st.session_state["username"] = input_user
 
             st.success("✅ Login Successful")
-
             st.rerun()
 
         else:
@@ -41,10 +50,17 @@ if not st.session_state["logged_in"]:
     st.stop()
 
 # ---------------- DASHBOARD ----------------
-st.title("🏠 Dashboard")
+st.title("🏠 Transaction Dashboard")
+
 st.success(f"Welcome {st.session_state['username']} 👋")
 
-if st.button("Logout", key="logout_main"):
+# ---------------- TIME DISPLAY ----------------
+st.markdown(
+    f"**Last Updated:** {now_yangon.strftime('%Y-%m-%d %H:%M:%S')} (Yangon Time)"
+)
+
+# ---------------- LOGOUT ----------------
+if st.button("Logout", key="logout_btn"):
 
     st.session_state["logged_in"] = False
     st.session_state["username"] = ""
