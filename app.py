@@ -1,32 +1,30 @@
 import streamlit as st
+import pandas as pd
 import pytz
 from datetime import datetime
+from supabase import create_client
 
 # ---------------- PAGE CONFIG ----------------
 st.set_page_config(layout="wide")
 
-# ---------------- SUPABASE (optional for now safe init) ----------------
-SUPABASE_URL = st.secrets.get("SUPABASE_URL", "")
-SUPABASE_KEY = st.secrets.get("SUPABASE_KEY", "")
+# ---------------- SUPABASE INIT ----------------
+SUPABASE_URL = st.secrets["SUPABASE_URL"]
+SUPABASE_KEY = st.secrets["SUPABASE_KEY"]
 
-# ---------------- TIMEZONE ----------------
+supabase = create_client(SUPABASE_URL, SUPABASE_KEY)
+
+# ---------------- TIME ----------------
 yangon_tz = pytz.timezone("Asia/Yangon")
 now_yangon = datetime.now(yangon_tz)
 
-# ---------------- SESSION STATE ----------------
+# ---------------- SESSION ----------------
 if "logged_in" not in st.session_state:
     st.session_state["logged_in"] = False
 
 if "username" not in st.session_state:
     st.session_state["username"] = ""
 
-# ---------------- DEMO USERS (SAFE TEST MODE) ----------------
-USERS = {
-    "admin": "pass123",
-    "user": "1234"
-}
-
-# ---------------- LOGIN PAGE ----------------
+# ---------------- LOGIN ----------------
 if not st.session_state["logged_in"]:
 
     st.title("🔐 Admin Login System")
@@ -34,33 +32,60 @@ if not st.session_state["logged_in"]:
     input_user = st.text_input("User ID")
     input_pass = st.text_input("Password", type="password")
 
-    if st.button("Login", key="login_btn"):
+    if st.button("Login"):
 
-        if input_user in USERS and USERS[input_user] == input_pass:
+        try:
+            res = supabase.table("user_setup").select("*").execute()
+            users = res.data or []
 
-            st.session_state["logged_in"] = True
-            st.session_state["username"] = input_user
+            found = False
 
-            st.success("✅ Login Successful")
-            st.rerun()
+            for u in users:
+                if u.get("user_id") == input_user and u.get("password") == input_pass:
+                    found = True
+                    break
 
-        else:
-            st.error("❌ Invalid User ID or Password")
+            if found:
+                st.session_state["logged_in"] = True
+                st.session_state["username"] = input_user
+                st.success("Login Successful")
+                st.rerun()
+            else:
+                st.error("Invalid credentials")
+
+        except Exception as e:
+            st.error(f"Database Error: {e}")
 
     st.stop()
 
 # ---------------- DASHBOARD ----------------
-st.title("🏠 Transaction Dashboard")
+st.title("📈 Transaction Dashboard")
 
 st.success(f"Welcome {st.session_state['username']} 👋")
 
-# ---------------- TIME DISPLAY ----------------
 st.markdown(
     f"**Last Updated:** {now_yangon.strftime('%Y-%m-%d %H:%M:%S')} (Yangon Time)"
 )
 
+# ---------------- FETCH DATA ----------------
+try:
+    response = supabase.table("transactions").select("*").execute()
+    data = response.data or []
+
+    df_dash = pd.DataFrame(data)
+
+    st.subheader("📊 Transactions Data")
+
+    if df_dash.empty:
+        st.warning("No data found in transactions table")
+    else:
+        st.dataframe(df_dash)
+
+except Exception as e:
+    st.error(f"❌ Database Error: {e}")
+
 # ---------------- LOGOUT ----------------
-if st.button("Logout", key="logout_btn"):
+if st.button("Logout"):
 
     st.session_state["logged_in"] = False
     st.session_state["username"] = ""
