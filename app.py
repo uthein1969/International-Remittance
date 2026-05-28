@@ -18,8 +18,8 @@ st.write("If you see this → Streamlit is OK")
 # supabase = create_client(SUPABASE_URL, SUPABASE_KEY)
 
 # ---------------- TIME ----------------
-yangon_tz = pytz.timezone("Asia/Yangon")
-now_yangon = datetime.now(yangon_tz)
+# yangon_tz = pytz.timezone("Asia/Yangon")
+# now_yangon = datetime.now(yangon_tz)
 
 # ---------------- SESSION ----------------
 if "logged_in" not in st.session_state:
