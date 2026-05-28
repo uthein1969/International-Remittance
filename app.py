@@ -149,59 +149,123 @@ elif menu == "🏦 Inward":
         st.error("Supabase not connected")
         st.stop()
 
-    # ================= SESSION INIT =================
-    if "amount" not in st.session_state:
-        st.session_state.amount = 0.0
+    # ================= SESSION DEFAULT =================
+    if "show_slip" not in st.session_state:
+        st.session_state.show_slip = False
+
+    if "slip" not in st.session_state:
+        st.session_state.slip = {}
+
+    # ================= GET LAST TRANSACTION NO =================
+    try:
+        last = supabase.table("inward_transactions") \
+            .select("transaction_no") \
+            .order("created_at", desc=True) \
+            .limit(1).execute()
+
+        if last.data:
+            last_no = int(last.data[0]["transaction_no"])
+            new_no = f"{last_no + 1:04d}"
+        else:
+            new_no = "0001"
+    except:
+        new_no = "0001"
 
     # ================= FORM =================
-    with st.form("inward_form"):
+    if not st.session_state.show_slip:
+
+        st.subheader("🔵 Receiver Info")
+
         col1, col2 = st.columns(2)
+        r_name = col1.text_input("Receiver Name")
+        r_nrc = col2.text_input("Receiver NRC")
 
-        with col1:
-            branch = st.text_input("Branch")
-            r_name = st.text_input("Receiver Name")
-            r_nrc = st.text_input("Receiver NRC")
-            r_phone = st.text_input("Receiver Phone")
+        r_phone = st.text_input("Phone")
+        r_address = st.text_input("Address")
 
-        with col2:
-            s_name = st.text_input("Sender Name")
-            currency = st.selectbox("Currency", ["THB", "USD", "SGD"])
-            amount = st.number_input("Amount", min_value=0.0, step=0.01)
+        col3, col4 = st.columns(2)
+        r_state = col3.text_input("State")
+        r_point = col4.text_input("Withdraw Point")
 
-        mmk_rate = st.number_input("MMK Rate", min_value=0.0, step=0.01)
-        mmk_allow = st.number_input("MMK Allowance", min_value=0.0, step=0.01)
+        st.subheader("🟢 Sender Info")
 
-        total_mmk = (amount * mmk_rate) + mmk_allow
-        st.info(f"Total MMK: {total_mmk:,.2f}")
+        s_name = st.text_input("Sender Name")
+        s_id = st.text_input("Sender ID")
+        s_country = st.text_input("Country")
 
-        submit = st.form_submit_button("💾 Save Transaction")
+        col5, col6, col7 = st.columns(3)
+        currency = col5.selectbox("Currency", ["THB", "USD", "SGD"])
+        amount = col6.number_input("Amount", min_value=0.0)
+        rate = col7.number_input("MMK Rate", min_value=0.0)
 
-    # ================= SAVE =================
-    if submit:
-        try:
-            data = {
-                "branch": branch,
-                "r_name": r_name,
-                "r_nrc": r_nrc,
-                "r_phone": r_phone,
-                "s_name": s_name,
-                "currency": currency,
-                "amount": float(amount),
-                "mmk_rate": float(mmk_rate),
-                "mmk_allowance": float(mmk_allow),
-                "total_mmk": float(total_mmk),
-            }
+        allow = st.number_input("Allowance", min_value=0.0)
 
-            res = supabase.table("inward_transactions").insert(data).execute()
+        total_mmk = (amount * rate) + allow
 
-            if res.data:
-                st.success("✅ Transaction Saved Successfully")
-                st.balloons()
-            else:
-                st.error("❌ Save Failed")
+        st.markdown(f"### 💰 Total MMK: {total_mmk:,.2f}")
 
-        except Exception as e:
-            st.error(f"Save Error: {e}")
+        branch = st.selectbox("Branch", ["Yangon", "Mandalay", "NPT"])
+        trans_no = st.text_input("Transaction No", value=new_no)
+
+        # ================= SAVE =================
+        if st.button("💾 Save Transaction"):
+            try:
+                # blacklist check
+                bl = supabase.table("blacklist") \
+                    .select("*") \
+                    .eq("nrcno", r_nrc) \
+                    .execute()
+
+                if bl.data:
+                    st.error("❌ Blacklisted Customer")
+                    st.stop()
+
+                data = {
+                    "transaction_no": trans_no,
+                    "branch": branch,
+                    "r_name": r_name,
+                    "r_nrc": r_nrc,
+                    "r_phone": r_phone,
+                    "r_address": r_address,
+                    "r_state": r_state,
+                    "r_withdraw_point": r_point,
+                    "s_name": s_name,
+                    "s_id": s_id,
+                    "s_country": s_country,
+                    "currency": currency,
+                    "amount": amount,
+                    "mmk_rate": rate,
+                    "mmk_allowance": allow,
+                    "total_mmk": total_mmk,
+                }
+
+                res = supabase.table("inward_transactions").insert(data).execute()
+
+                if res.data:
+                    st.session_state.slip = data
+                    st.session_state.show_slip = True
+                    st.rerun()
+
+            except Exception as e:
+                st.error(f"Save Error: {e}")
+
+    # ================= SLIP =================
+    else:
+        sd = st.session_state.slip
+
+        st.success("Saved Successfully 🎉")
+
+        st.markdown("### 📄 Payout Slip")
+
+        st.write("Transaction No:", sd["transaction_no"])
+        st.write("Receiver:", sd["r_name"])
+        st.write("Sender:", sd["s_name"])
+        st.write("Total:", f"{sd['total_mmk']:,.2f} MMK")
+
+        if st.button("🔄 New Transaction"):
+            st.session_state.show_slip = False
+            st.session_state.slip = {}
+            st.rerun()
 
 elif menu == "📋 Blacklist":
     st.title("Blacklist Module")
