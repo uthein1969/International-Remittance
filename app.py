@@ -93,3 +93,26 @@ else:
         st.session_state.logged_in = False
         st.session_state.username = ""
         st.rerun()
+
+# Sidebar Navigation System
+menu = st.sidebar.radio(
+    "📌 Menu",
+    ["📊 Dashboard", "🔍 Search", "🏦 Inward", "📋 Blacklist", "⚙️ System"]
+)
+
+# ROUTER SYSTEM
+if menu == "📊 Dashboard":
+    dashboard()
+
+elif menu == "🔍 Search":
+    st.title("Search Module (Next Step Build)")
+
+elif menu == "🏦 Inward":
+    st.title("Inward Module (Next Step Build)")
+
+elif menu == "📋 Blacklist":
+    st.title("Blacklist Module (Next Step Build)")
+
+elif menu == "⚙️ System":
+    st.title("System Module (Next Step Build)")
+
