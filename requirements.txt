@@ -1,6 +1,7 @@
 streamlit==1.32.2
 supabase==2.0.3
+postgrest==0.13.2
 httpx==0.24.1
 httpcore==0.17.3
-pandas==2.2.2
-pytz==2024.1
+pandas
+pytz

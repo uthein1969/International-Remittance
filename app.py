@@ -3,7 +3,9 @@ import streamlit as st
 import pytz
 from supabase import create_client
 from datetime import datetime
-
+import requests
+st.write(requests.get("https://google.com").status_code)
+st.write(requests.get("https://supabase.com").status_code)
 # ---------------- PAGE CONFIG ----------------
 st.set_page_config(layout="wide")
 
