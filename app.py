@@ -44,7 +44,7 @@ if not st.session_state["logged_in"]:
 st.title("🏠 Dashboard")
 st.success(f"Welcome {st.session_state['username']} 👋")
 
-if st.button("Logout"):
+if st.button("Logout", key="logout_main"):
 
     st.session_state["logged_in"] = False
     st.session_state["username"] = ""
