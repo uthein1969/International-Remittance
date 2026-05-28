@@ -25,7 +25,7 @@ if "logged_in" not in st.session_state:
 
 if "username" not in st.session_state:
     st.session_state.username = ""
-    
+
 # STEP 2 — LOGIN MODULE (SEPARATE & SAFE)
 def login_page():
     st.title("🔐 Admin Login")
@@ -54,4 +54,31 @@ def login_page():
 
         except Exception as e:
             st.error(f"DB Error: {e}")
+            
 # STEP 3 — DASHBOARD (MINIMUM SAFE VERSION)
+def dashboard():
+    st.title("📈 Transaction Dashboard")
+
+    st.success(f"Welcome {st.session_state.username}")
+
+    st.markdown(
+        f"Last Updated: {now_yangon.strftime('%Y-%m-%d %H:%M:%S')}"
+    )
+
+    if supabase is None:
+        st.error("Supabase not connected")
+        return
+
+    try:
+        res = supabase.table("inward_transactions").select("*").execute()
+        data = res.data or []
+
+        df = pd.DataFrame(data)
+
+        if df.empty:
+            st.warning("No transactions found")
+        else:
+            st.dataframe(df)
+
+    except Exception as e:
+        st.error(f"DB Error: {e}")
