@@ -143,7 +143,65 @@ elif menu == "🔍 Search":
 
 
 elif menu == "🏦 Inward":
-    st.title("Inward Module")
+    st.title("🏦 Inward Transaction")
+
+    if supabase is None:
+        st.error("Supabase not connected")
+        st.stop()
+
+    # ================= SESSION INIT =================
+    if "amount" not in st.session_state:
+        st.session_state.amount = 0.0
+
+    # ================= FORM =================
+    with st.form("inward_form"):
+        col1, col2 = st.columns(2)
+
+        with col1:
+            branch = st.text_input("Branch")
+            r_name = st.text_input("Receiver Name")
+            r_nrc = st.text_input("Receiver NRC")
+            r_phone = st.text_input("Receiver Phone")
+
+        with col2:
+            s_name = st.text_input("Sender Name")
+            currency = st.selectbox("Currency", ["THB", "USD", "SGD"])
+            amount = st.number_input("Amount", min_value=0.0, step=0.01)
+
+        mmk_rate = st.number_input("MMK Rate", min_value=0.0, step=0.01)
+        mmk_allow = st.number_input("MMK Allowance", min_value=0.0, step=0.01)
+
+        total_mmk = (amount * mmk_rate) + mmk_allow
+        st.info(f"Total MMK: {total_mmk:,.2f}")
+
+        submit = st.form_submit_button("💾 Save Transaction")
+
+    # ================= SAVE =================
+    if submit:
+        try:
+            data = {
+                "branch": branch,
+                "r_name": r_name,
+                "r_nrc": r_nrc,
+                "r_phone": r_phone,
+                "s_name": s_name,
+                "currency": currency,
+                "amount": float(amount),
+                "mmk_rate": float(mmk_rate),
+                "mmk_allowance": float(mmk_allow),
+                "total_mmk": float(total_mmk),
+            }
+
+            res = supabase.table("inward_transactions").insert(data).execute()
+
+            if res.data:
+                st.success("✅ Transaction Saved Successfully")
+                st.balloons()
+            else:
+                st.error("❌ Save Failed")
+
+        except Exception as e:
+            st.error(f"Save Error: {e}")
 
 elif menu == "📋 Blacklist":
     st.title("Blacklist Module")
