@@ -27,7 +27,7 @@ supabase = create_client(url, key)
 
 st.success("Supabase client created")
 
-# ---------------- SESSION ----------------
+# ---------------- SESSION STATE ----------------
 if "logged_in" not in st.session_state:
     st.session_state["logged_in"] = False
 
@@ -38,13 +38,16 @@ if "username" not in st.session_state:
 if not st.session_state["logged_in"]:
 
     st.title("🔐 Admin Login")
+
+    # 🔧 DEBUG (optional - remove later)
     try:
         test = supabase.table("user_setup").select("*").execute()
-        st.write(test.data)
-
+        st.write("DB Test:", test.data)
     except Exception as e:
-        st.error(e)
+        st.error(f"DB Error: {e}")
+        st.stop()
 
+    # ---------------- FORM ----------------
     with st.form("login_form"):
 
         input_user = st.text_input("User ID")
@@ -55,16 +58,26 @@ if not st.session_state["logged_in"]:
         if login_btn:
 
             try:
+                # ✔ STABLE METHOD (NO .eq CHAIN BUG)
+                res = supabase.table("user_setup").select("*").execute()
 
-                query = (
-                    supabase.table("user_setup")
-                    .select("*")
-                    .eq("user_id", input_user)
-                    .eq("password", input_pass)
-                    .execute()
-                )
+                users = res.data
 
-                if len(query.data) > 0:
+                if not users:
+                    st.error("No users found in database")
+                    st.stop()
+
+                found = False
+
+                for user in users:
+                    if (
+                        user.get("user_id") == input_user
+                        and user.get("password") == input_pass
+                    ):
+                        found = True
+                        break
+
+                if found:
 
                     st.session_state["logged_in"] = True
                     st.session_state["username"] = input_user
@@ -76,7 +89,7 @@ if not st.session_state["logged_in"]:
                     st.error("❌ Invalid User ID or Password")
 
             except Exception as e:
-                st.error(f"Login Error: {str(e)}")
+                st.error(f"Login Error: {e}")
 
     st.stop()
 
