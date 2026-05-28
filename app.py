@@ -113,6 +113,8 @@ elif menu == "🔍 Search":
     with col3:
         search_btn = st.button("Search")
 
+    filtered_df = pd.DataFrame()  # ✅ ALWAYS DEFINED
+
     # ================= FETCH DATA =================
     try:
         res = supabase.table("inward_transactions") \
@@ -123,10 +125,9 @@ elif menu == "🔍 Search":
         data = res.data or []
         df = pd.DataFrame(data)
 
-        # ❗ IMPORTANT FIX (ဒီနေရာက main fix)
+        # ❗ NO DATA CASE FIRST HANDLE
         if df.empty:
             st.warning("No data found in database")
-            filtered_df = pd.DataFrame()
 
         else:
             df["created_at"] = pd.to_datetime(df["created_at"])
@@ -138,24 +139,27 @@ elif menu == "🔍 Search":
             else:
                 filtered_df = df
 
-        # ================= DISPLAY =================
+    except Exception as e:
+        st.error(f"Search Error: {e}")
+
+    # ================= DISPLAY (ONLY IF DATA EXISTS) =================
+    if not filtered_df.empty:
         st.subheader("📊 Results")
 
         st.metric("Total Transactions", len(filtered_df))
 
-        if not filtered_df.empty:
-            st.dataframe(filtered_df, use_container_width=True)
+        st.dataframe(filtered_df, use_container_width=True)
 
-            csv = filtered_df.to_csv(index=False).encode("utf-8")
+        csv = filtered_df.to_csv(index=False).encode("utf-8")
 
-            st.download_button(
-                "📥 Download CSV",
-                data=csv,
-                file_name="transactions.csv",
-                mime="text/csv"
-            )
-        else:
-            st.info("No filtered results found")
+        st.download_button(
+            "📥 Download CSV",
+            data=csv,
+            file_name="transactions.csv",
+            mime="text/csv"
+        )
+    else:
+        st.info("No results to display (please search or check database)")
 
     except Exception as e:
         st.error(f"Search Error: {e}")
