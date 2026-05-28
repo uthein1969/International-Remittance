@@ -9,24 +9,24 @@ st.set_page_config(layout="wide")
 yangon_tz = pytz.timezone('Asia/Yangon')
 now_yangon = datetime.now(yangon_tz)
 
-def safe_float(val):
-    try:
-        if val is None or str(val).strip() == "":
-            return 0.0
-        return float(val)
-    except (ValueError, TypeError):
-        return 0.0
-    st.write(st.secrets)    
-# --- ၁။ Setup & Connections (အမှားကင်းဆုံးစနစ် ပြင်ဆင်ခြင်း) ---
-def get_supabase_client():
-    URL = st.secrets["SUPABASE_URL"]
-    KEY = st.secrets["SUPABASE_KEY"]
+st.title("Supabase Test")
+
+try:
+    url = st.secrets["SUPABASE_URL"]
+    key = st.secrets["SUPABASE_KEY"]
+
     st.write("URL =", url)
 
-    return create_client(URL, KEY)
-st.success("Connected!")
+    supabase = create_client(url, key)
 
-# 💡 လော့ဂ်အင် ဝင်သည်ဖြစ်စေ၊ မဝင်သည်ဖြစ်စေ အောက်က စာမျက်နှာများပါ လှမ်းသုံးနိုင်ရန် စတင်ချိတ်ဆက်ခြင်း
+    st.success("✅ Connected!")
+
+except Exception as e:
+    st.error(f"Database Connection Error: {e}")
+
+except Exception as e:
+    st.error(f"Database Connection Error: {e}")
+
 try:
     supabase = get_supabase_client()
 except Exception as e:
