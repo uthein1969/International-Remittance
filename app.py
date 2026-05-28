@@ -123,37 +123,39 @@ elif menu == "🔍 Search":
         data = res.data or []
         df = pd.DataFrame(data)
 
+        # ❗ IMPORTANT FIX (ဒီနေရာက main fix)
         if df.empty:
-            st.warning("No data found")
-            st.stop()
+            st.warning("No data found in database")
+            filtered_df = pd.DataFrame()
 
-        # datetime convert
-        df["created_at"] = pd.to_datetime(df["created_at"])
-        df["Date"] = df["created_at"].dt.date
-
-        # ================= FILTER LOGIC =================
-        if search_btn:
-            mask = (df["Date"] >= start_date) & (df["Date"] <= end_date)
-            filtered_df = df.loc[mask]
         else:
-            filtered_df = df
+            df["created_at"] = pd.to_datetime(df["created_at"])
+            df["Date"] = df["created_at"].dt.date
+
+            if search_btn:
+                mask = (df["Date"] >= start_date) & (df["Date"] <= end_date)
+                filtered_df = df.loc[mask]
+            else:
+                filtered_df = df
 
         # ================= DISPLAY =================
         st.subheader("📊 Results")
 
         st.metric("Total Transactions", len(filtered_df))
 
-        st.dataframe(filtered_df, use_container_width=True)
+        if not filtered_df.empty:
+            st.dataframe(filtered_df, use_container_width=True)
 
-        # ================= DOWNLOAD =================
-        csv = filtered_df.to_csv(index=False).encode("utf-8")
+            csv = filtered_df.to_csv(index=False).encode("utf-8")
 
-        st.download_button(
-            "📥 Download CSV",
-            data=csv,
-            file_name="transactions.csv",
-            mime="text/csv"
-        )
+            st.download_button(
+                "📥 Download CSV",
+                data=csv,
+                file_name="transactions.csv",
+                mime="text/csv"
+            )
+        else:
+            st.info("No filtered results found")
 
     except Exception as e:
         st.error(f"Search Error: {e}")
