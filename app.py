@@ -78,17 +78,20 @@ if not st.session_state.logged_in:
     st.stop()
 
 # ================= AFTER LOGIN ONLY =================
+
 menu = st.sidebar.radio(
     "📌 Menu",
     ["📊 Dashboard", "🔍 Search", "🏦 Inward", "📋 Blacklist", "⚙️ System"]
 )
 
+# Logout (SEPARATE - NOT INSIDE ANY IF)
 if st.sidebar.button("Logout"):
     st.session_state.logged_in = False
     st.rerun()
 
-    if menu == "📊 Dashboard":
-        dashboard()
+# ================= ROUTER =================
+if menu == "📊 Dashboard":
+    dashboard()
 
 elif menu == "🔍 Search":
     st.title("🔍 Search Transactions")
