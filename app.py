@@ -80,17 +80,19 @@ if not st.session_state.logged_in:
     st.stop()
 
 # ================= AFTER LOGIN ONLY =================
-menu = st.sidebar.radio(
-    "📌 Menu",
-    ["📊 Dashboard", "🔍 Search", "🏦 Inward", "📋 Blacklist", "⚙️ System"]
-)
+if st.session_state.logged_in:
 
-if st.sidebar.button("Logout"):
-    st.session_state.logged_in = False
-    st.rerun()
+    menu = st.sidebar.radio(
+        "📌 Menu",
+        ["📊 Dashboard", "🔍 Search", "🏦 Inward", "📋 Blacklist", "⚙️ System"]
+    )
 
-if menu == "📊 Dashboard":
-    dashboard()
+    if st.sidebar.button("Logout"):
+        st.session_state.logged_in = False
+        st.rerun()
+
+    if menu == "📊 Dashboard":
+        dashboard()
 
 elif menu == "🔍 Search":
     st.title("🔍 Search Transactions")
