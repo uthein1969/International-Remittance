@@ -15,25 +15,13 @@ try:
     url = st.secrets["SUPABASE_URL"]
     key = st.secrets["SUPABASE_KEY"]
 
-    st.write("URL =", url)
-
     supabase = create_client(url, key)
 
     st.success("✅ Connected!")
 
 except Exception as e:
     st.error(f"Database Connection Error: {e}")
-
-except Exception as e:
-    st.error(f"Database Connection Error: {e}")
-
-try:
-    supabase = get_supabase_client()
-except Exception as e:
-    st.error(f"Database Connection Error: {e}")
-
-if 'logged_in' not in st.session_state:
-    st.session_state['logged_in'] = False
+    st.stop()
 
 
 if not st.session_state['logged_in']:
