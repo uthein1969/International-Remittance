@@ -11,41 +11,40 @@ st.set_page_config(layout="wide")
 yangon_tz = pytz.timezone("Asia/Yangon")
 now_yangon = datetime.now(yangon_tz)
 
-# ---------------- SUPABASE CONNECTION ----------------
-try:
-    url = st.secrets["SUPABASE_URL"]
-    key = st.secrets["SUPABASE_KEY"]
+# ---------------- SUPABASE ----------------
+url = st.secrets["SUPABASE_URL"]
+key = st.secrets["SUPABASE_KEY"]
 
-    supabase = create_client(url, key)
+# IMPORTANT
+supabase = create_client(
+    supabase_url=url,
+    supabase_key=key
+)
 
-except Exception as e:
-    st.error(f"Database Connection Error: {e}")
-    st.stop()
-
-# ---------------- SESSION STATE ----------------
+# ---------------- SESSION ----------------
 if "logged_in" not in st.session_state:
     st.session_state["logged_in"] = False
 
 if "username" not in st.session_state:
     st.session_state["username"] = ""
 
-# ---------------- LOGIN PAGE ----------------
+# ---------------- LOGIN ----------------
 if not st.session_state["logged_in"]:
 
-    st.title("🔐 Admin Login System")
+    st.title("🔐 Admin Login")
 
     with st.form("login_form"):
 
         input_user = st.text_input("User ID")
         input_pass = st.text_input("Password", type="password")
 
-        submit_btn = st.form_submit_button("Login")
+        login_btn = st.form_submit_button("Login")
 
-        if submit_btn:
+        if login_btn:
 
             try:
-                # Check user from Supabase
-                res = (
+
+                query = (
                     supabase.table("user_setup")
                     .select("*")
                     .eq("user_id", input_user)
@@ -53,21 +52,22 @@ if not st.session_state["logged_in"]:
                     .execute()
                 )
 
-                if res.data:
+                if len(query.data) > 0:
 
                     st.session_state["logged_in"] = True
                     st.session_state["username"] = input_user
 
-                    st.success("✅ Login Successful!")
+                    st.success("✅ Login Successful")
                     st.rerun()
 
                 else:
                     st.error("❌ Invalid User ID or Password")
 
             except Exception as e:
-                st.error(f"Login Error: {e}")
+                st.error(f"Login Error: {str(e)}")
 
     st.stop()
+
 
 # ---------------- MAIN APP ----------------
 st.title("🏠 Dashboard")
