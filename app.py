@@ -1,73 +1,62 @@
 import streamlit as st
 
-# ---------------- PAGE CONFIG (MUST FIRST) ----------------
 st.set_page_config(layout="wide")
 
-# ---------------- IMPORTS ----------------
-import pytz
-from supabase import create_client
-from datetime import datetime
-
-# ---------------- SUPABASE ----------------
-url = st.secrets["SUPABASE_URL"]
-key = st.secrets["SUPABASE_KEY"]
-
-supabase = create_client(url, key)
-
-# ---------------- TIMEZONE ----------------
-yangon_tz = pytz.timezone("Asia/Yangon")
-now_yangon = datetime.now(yangon_tz)
-
-# ---------------- SESSION STATE ----------------
+# ---------------- SESSION ----------------
 if "logged_in" not in st.session_state:
     st.session_state["logged_in"] = False
 
 if "username" not in st.session_state:
     st.session_state["username"] = ""
 
-# ---------------- LOGIN PAGE ----------------
+# ---------------- LOGIN ----------------
 if not st.session_state["logged_in"]:
 
     st.title("🔐 Admin Login System")
 
-    with st.form("login_form"):
+    input_user = st.text_input("User ID")
+    input_pass = st.text_input("Password", type="password")
 
-        input_user = st.text_input("User ID")
-        input_pass = st.text_input("Password", type="password")
+    if st.button("Login"):
 
-        login_btn = st.form_submit_button("Login")
+        try:
+            # 🔥 SAFE MODE: NO COMPLEX CHAIN, NO FORM RERUN ISSUE
+            import requests
 
-        if login_btn:
+            url = "https://tjkykxuvzcmctmxxurew.supabase.co/rest/v1/user_setup?select=*"
 
-            try:
-                # ✔ SINGLE SAFE CALL
-                res = supabase.table("user_setup").select("*").execute()
+            headers = {
+                "apikey": st.secrets["SUPABASE_KEY"],
+                "Authorization": f"Bearer {st.secrets['SUPABASE_KEY']}"
+            }
 
-                users = res.data or []
+            r = requests.get(url, headers=headers)
 
-                # ✔ PURE PYTHON CHECK (NO NETWORK CHAOS)
-                user_found = any(
-                    u.get("user_id") == input_user and u.get("password") == input_pass
-                    for u in users
-                )
+            users = r.json()
 
-                if user_found:
-                    st.session_state["logged_in"] = True
-                    st.session_state["username"] = input_user
-                    st.success("Login Successful")
-                    st.stop()
-                else:
-                    st.error("Invalid credentials")
+            found = False
 
-            except Exception as e:
-                st.error(f"Login Error: {str(e)}")
+            for u in users:
+                if u["user_id"] == input_user and u["password"] == input_pass:
+                    found = True
+                    break
+
+            if found:
+                st.session_state["logged_in"] = True
+                st.session_state["username"] = input_user
+                st.success("Login Successful")
+                st.stop()
+            else:
+                st.error("Invalid credentials")
+
+        except Exception as e:
+            st.error(f"Login Error: {e}")
 
     st.stop()
 
 # ---------------- DASHBOARD ----------------
 st.title("🏠 Dashboard")
-
-st.success(f"Welcome {st.session_state['username']} 👋")
+st.success(f"Welcome {st.session_state['username']}")
 
 if st.button("Logout"):
 
