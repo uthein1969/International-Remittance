@@ -4,10 +4,10 @@ import pytz
 from datetime import datetime
 from supabase import create_client
 
-# ================= PAGE CONFIG =================
+# ================= CONFIG =================
 st.set_page_config(page_title="International Remittance", layout="wide")
 
-# ================= SAFE SUPABASE INIT =================
+# ================= SUPABASE =================
 SUPABASE_URL = st.secrets.get("SUPABASE_URL")
 SUPABASE_KEY = st.secrets.get("SUPABASE_KEY")
 
@@ -26,7 +26,7 @@ if "logged_in" not in st.session_state:
 if "username" not in st.session_state:
     st.session_state.username = ""
 
-# STEP 2 — LOGIN MODULE (SEPARATE & SAFE)
+# ================= LOGIN =================
 def login_page():
     st.title("🔐 Admin Login")
 
@@ -34,7 +34,6 @@ def login_page():
     pwd = st.text_input("Password", type="password")
 
     if st.button("Login"):
-
         if supabase is None:
             st.error("Supabase not connected")
             return
@@ -48,32 +47,22 @@ def login_page():
                     st.session_state.logged_in = True
                     st.session_state.username = user
                     st.rerun()
-                    return
 
             st.error("Invalid credentials")
 
         except Exception as e:
             st.error(f"DB Error: {e}")
 
-# STEP 3 — DASHBOARD (MINIMUM SAFE VERSION)
+# ================= DASHBOARD =================
 def dashboard():
     st.title("📈 Transaction Dashboard")
-
     st.success(f"Welcome {st.session_state.username}")
 
-    st.markdown(
-        f"Last Updated: {now_yangon.strftime('%Y-%m-%d %H:%M:%S')}"
-    )
-
-    if supabase is None:
-        st.error("Supabase not connected")
-        return
+    st.markdown(f"Last Updated: {now_yangon.strftime('%Y-%m-%d %H:%M:%S')}")
 
     try:
         res = supabase.table("inward_transactions").select("*").execute()
-        data = res.data or []
-
-        df = pd.DataFrame(data)
+        df = pd.DataFrame(res.data or [])
 
         if df.empty:
             st.warning("No transactions found")
@@ -83,36 +72,35 @@ def dashboard():
     except Exception as e:
         st.error(f"DB Error: {e}")
 
-# STEP 4 — MAIN ROUTER
+# ================= ROUTER (IMPORTANT FIX) =================
 if not st.session_state.logged_in:
+
+    # ONLY LOGIN PAGE
     login_page()
-else:
-    dashboard()
+    st.stop()
 
-    if st.sidebar.button("Logout"):
-        st.session_state.logged_in = False
-        st.session_state.username = ""
-        st.rerun()
-
-# Sidebar Navigation System
+# ================= AFTER LOGIN ONLY =================
 menu = st.sidebar.radio(
     "📌 Menu",
     ["📊 Dashboard", "🔍 Search", "🏦 Inward", "📋 Blacklist", "⚙️ System"]
 )
 
-# ROUTER SYSTEM
+if st.sidebar.button("Logout"):
+    st.session_state.logged_in = False
+    st.rerun()
+
 if menu == "📊 Dashboard":
     dashboard()
 
 elif menu == "🔍 Search":
-    st.title("Search Module (Next Step Build)")
+    st.title("Search Module")
 
 elif menu == "🏦 Inward":
-    st.title("Inward Module (Next Step Build)")
+    st.title("Inward Module")
 
 elif menu == "📋 Blacklist":
-    st.title("Blacklist Module (Next Step Build)")
+    st.title("Blacklist Module")
 
 elif menu == "⚙️ System":
-    st.title("System Module (Next Step Build)")
+    st.title("System Module")
 
