@@ -9,15 +9,26 @@ st.set_page_config(layout="wide")
 yangon_tz = pytz.timezone("Asia/Yangon")
 now_yangon = datetime.now(yangon_tz)
 
-# ---------------- SECRETS ----------------
+# ---------------- SUPABASE ----------------
 SUPABASE_URL = st.secrets["SUPABASE_URL"]
 SUPABASE_KEY = st.secrets["SUPABASE_KEY"]
 
-# ---------------- CREATE CLIENT ----------------
 supabase = create_client(SUPABASE_URL, SUPABASE_KEY)
 
 # ---------------- TEST ----------------
-st.title("🧼 STEP 3 SUCCESS")
-st.success("Supabase client created successfully")
+st.title("🧼 STEP 4 DATABASE TEST")
 
 st.write(now_yangon.strftime("%Y-%m-%d %H:%M:%S"))
+
+# ---------------- DATABASE QUERY ----------------
+try:
+
+    response = supabase.table("user_setup").select("*").execute()
+
+    st.success("✅ Database query successful")
+
+    st.write(response.data)
+
+except Exception as e:
+
+    st.error(f"❌ Database Error: {e}")
