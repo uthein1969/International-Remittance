@@ -1,19 +1,13 @@
 import streamlit as st
 
+# ---------------- PAGE CONFIG (MUST FIRST) ----------------
 st.set_page_config(layout="wide")
 
+# ---------------- IMPORTS ----------------
 import pandas as pd
 import pytz
 from supabase import create_client
 from datetime import datetime
-import requests
-
-# ---------------- TEST INTERNET ----------------
-try:
-    st.write("Google:", requests.get("https://google.com").status_code)
-    st.write("Supabase:", requests.get("https://supabase.com").status_code)
-except Exception as e:
-    st.error(f"Network error: {e}")
 
 # ---------------- TIMEZONE ----------------
 yangon_tz = pytz.timezone("Asia/Yangon")
@@ -25,8 +19,6 @@ key = st.secrets["SUPABASE_KEY"]
 
 supabase = create_client(url, key)
 
-st.success("Supabase client created")
-
 # ---------------- SESSION STATE ----------------
 if "logged_in" not in st.session_state:
     st.session_state["logged_in"] = False
@@ -34,20 +26,12 @@ if "logged_in" not in st.session_state:
 if "username" not in st.session_state:
     st.session_state["username"] = ""
 
-# ---------------- LOGIN ----------------
+# ---------------- LOGIN PAGE ----------------
 if not st.session_state["logged_in"]:
 
-    st.title("🔐 Admin Login")
+    st.title("🔐 Admin Login System")
 
-    # 🔧 DEBUG (optional - remove later)
-    try:
-        test = supabase.table("user_setup").select("*").execute()
-        st.write("DB Test:", test.data)
-    except Exception as e:
-        st.error(f"DB Error: {e}")
-        st.stop()
-
-    # ---------------- FORM ----------------
+    # ---------------- LOGIN FORM ----------------
     with st.form("login_form"):
 
         input_user = st.text_input("User ID")
@@ -58,14 +42,10 @@ if not st.session_state["logged_in"]:
         if login_btn:
 
             try:
-                # ✔ STABLE METHOD (NO .eq CHAIN BUG)
+                # ✔ SAFE QUERY (NO .eq BUG)
                 res = supabase.table("user_setup").select("*").execute()
 
-                users = res.data
-
-                if not users:
-                    st.error("No users found in database")
-                    st.stop()
+                users = res.data or []
 
                 found = False
 
@@ -83,7 +63,9 @@ if not st.session_state["logged_in"]:
                     st.session_state["username"] = input_user
 
                     st.success("✅ Login Successful")
-                    st.rerun()
+
+                    # ✔ SAFE STOP (no rerun crash)
+                    st.stop()
 
                 else:
                     st.error("❌ Invalid User ID or Password")
@@ -93,13 +75,11 @@ if not st.session_state["logged_in"]:
 
     st.stop()
 
-
-# ---------------- MAIN APP ----------------
+# ---------------- DASHBOARD ----------------
 st.title("🏠 Dashboard")
 
-st.success(f"Welcome {st.session_state['username']}")
+st.success(f"Welcome {st.session_state['username']} 👋")
 
-# Logout Button
 if st.button("Logout"):
 
     st.session_state["logged_in"] = False
