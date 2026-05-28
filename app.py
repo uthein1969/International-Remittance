@@ -93,7 +93,69 @@ if menu == "📊 Dashboard":
     dashboard()
 
 elif menu == "🔍 Search":
-    st.title("Search Module")
+    st.title("🔍 Search Transactions")
+
+    if supabase is None:
+        st.error("Supabase not connected")
+        st.stop()
+
+    # ================= FILTER =================
+    col1, col2, col3 = st.columns(3)
+
+    with col1:
+        start_date = st.date_input("Start Date")
+
+    with col2:
+        end_date = st.date_input("End Date")
+
+    with col3:
+        search_btn = st.button("Search")
+
+    # ================= FETCH DATA =================
+    try:
+        res = supabase.table("inward_transactions") \
+            .select("*") \
+            .order("created_at", desc=True) \
+            .execute()
+
+        data = res.data or []
+        df = pd.DataFrame(data)
+
+        if df.empty:
+            st.warning("No data found")
+            st.stop()
+
+        # datetime convert
+        df["created_at"] = pd.to_datetime(df["created_at"])
+        df["Date"] = df["created_at"].dt.date
+
+        # ================= FILTER LOGIC =================
+        if search_btn:
+            mask = (df["Date"] >= start_date) & (df["Date"] <= end_date)
+            filtered_df = df.loc[mask]
+        else:
+            filtered_df = df
+
+        # ================= DISPLAY =================
+        st.subheader("📊 Results")
+
+        st.metric("Total Transactions", len(filtered_df))
+
+        st.dataframe(filtered_df, use_container_width=True)
+
+        # ================= DOWNLOAD =================
+        csv = filtered_df.to_csv(index=False).encode("utf-8")
+
+        st.download_button(
+            "📥 Download CSV",
+            data=csv,
+            file_name="transactions.csv",
+            mime="text/csv"
+        )
+
+    except Exception as e:
+        st.error(f"Search Error: {e}")
+
 
 elif menu == "🏦 Inward":
     st.title("Inward Module")
