@@ -213,20 +213,28 @@ elif menu == "🔍 Search":
 
 
 elif menu == "🏦 Inward":
-    st.title("🏦 Inward Transaction")
+
+    st.title("🏦 Inward Transaction Form")
 
     if supabase is None:
         st.error("Supabase not connected")
         st.stop()
 
-    # ================= SESSION DEFAULT =================
+    import pytz
+    from datetime import datetime
+
+    # ================= TIME =================
+    yangon_tz = pytz.timezone("Asia/Yangon")
+    now_yangon = datetime.now(yangon_tz)
+
+    # ================= SESSION =================
     if "show_slip" not in st.session_state:
         st.session_state.show_slip = False
 
     if "slip" not in st.session_state:
         st.session_state.slip = {}
 
-    # ================= GET LAST TRANSACTION NO =================
+    # ================= LAST TRANSACTION NO =================
     try:
         last = supabase.table("inward_transactions") \
             .select("transaction_no") \
@@ -234,8 +242,7 @@ elif menu == "🏦 Inward":
             .limit(1).execute()
 
         if last.data:
-            last_no = int(last.data[0]["transaction_no"])
-            new_no = f"{last_no + 1:04d}"
+            new_no = str(int(last.data[0]["transaction_no"]) + 1).zfill(4)
         else:
             new_no = "0001"
     except:
@@ -244,41 +251,51 @@ elif menu == "🏦 Inward":
     # ================= FORM =================
     if not st.session_state.show_slip:
 
-        st.subheader("🔵 Receiver Info")
+        st.subheader("🔵 Receiver Information")
 
         col1, col2 = st.columns(2)
         r_name = col1.text_input("Receiver Name")
         r_nrc = col2.text_input("Receiver NRC")
 
-        r_phone = st.text_input("Phone")
-        r_address = st.text_input("Address")
+        r_phone = st.text_input("Receiver Phone")
+        r_address = st.text_input("Receiver Address")
 
         col3, col4 = st.columns(2)
-        r_state = col3.text_input("State")
+        r_state = col3.text_input("State / Division")
         r_point = col4.text_input("Withdraw Point")
 
-        st.subheader("🟢 Sender Info")
+        st.divider()
+
+        st.subheader("🟢 Sender Information")
 
         s_name = st.text_input("Sender Name")
-        s_id = st.text_input("Sender ID")
+        s_id = st.text_input("Sender ID / Passport")
+
         s_country = st.text_input("Country")
 
+        # 👉 Branch moved under Country (your request)
+        branch = st.selectbox(
+            "Branch",
+            ["Yangon", "Mandalay", "Nay Pyi Taw"]
+        )
+
         col5, col6, col7 = st.columns(3)
+
         currency = col5.selectbox("Currency", ["THB", "USD", "SGD"])
-        amount = col6.number_input("Amount", min_value=0.0)
-        rate = col7.number_input("MMK Rate", min_value=0.0)
+        amount = col6.number_input("Amount", min_value=0.0, format="%.2f")
+        rate = col7.number_input("MMK Rate", min_value=0.0, format="%.2f")
 
-        allow = st.number_input("Allowance", min_value=0.0)
+        allowance = st.number_input("MMK Allowance", min_value=0.0)
 
-        total_mmk = (amount * rate) + allow
+        total_mmk = (amount * rate) + allowance
 
-        st.markdown(f"### 💰 Total MMK: {total_mmk:,.2f}")
+        st.success(f"💰 Total MMK: {total_mmk:,.2f}")
 
-        branch = st.selectbox("Branch", ["Yangon", "Mandalay", "NPT"])
         trans_no = st.text_input("Transaction No", value=new_no)
 
         # ================= SAVE =================
-        if st.button("💾 Save Transaction"):
+        if st.button("💾 Save Transaction", type="primary"):
+
             try:
                 # blacklist check
                 bl = supabase.table("blacklist") \
@@ -287,26 +304,31 @@ elif menu == "🏦 Inward":
                     .execute()
 
                 if bl.data:
-                    st.error("❌ Blacklisted Customer")
+                    st.error("❌ This customer is BLACKLISTED")
                     st.stop()
 
                 data = {
                     "transaction_no": trans_no,
                     "branch": branch,
+
+                    "created_at": now_yangon.isoformat(),  # ✅ DATE TIME FIX
+
                     "r_name": r_name,
                     "r_nrc": r_nrc,
                     "r_phone": r_phone,
                     "r_address": r_address,
                     "r_state": r_state,
                     "r_withdraw_point": r_point,
+
                     "s_name": s_name,
                     "s_id": s_id,
                     "s_country": s_country,
+
                     "currency": currency,
                     "amount": amount,
                     "mmk_rate": rate,
-                    "mmk_allowance": allow,
-                    "total_mmk": total_mmk,
+                    "mmk_allowance": allowance,
+                    "total_mmk": total_mmk
                 }
 
                 res = supabase.table("inward_transactions").insert(data).execute()
@@ -323,14 +345,15 @@ elif menu == "🏦 Inward":
     else:
         sd = st.session_state.slip
 
-        st.success("Saved Successfully 🎉")
+        st.success("Transaction Saved 🎉")
 
-        st.markdown("### 📄 Payout Slip")
+        st.subheader("📄 Payout Slip")
 
         st.write("Transaction No:", sd["transaction_no"])
+        st.write("Branch:", sd["branch"])
         st.write("Receiver:", sd["r_name"])
         st.write("Sender:", sd["s_name"])
-        st.write("Total:", f"{sd['total_mmk']:,.2f} MMK")
+        st.write("Total MMK:", f"{sd['total_mmk']:,.2f}")
 
         if st.button("🔄 New Transaction"):
             st.session_state.show_slip = False
