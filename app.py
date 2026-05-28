@@ -137,44 +137,6 @@ def dashboard():
     except Exception as e:
         st.error(f"Dashboard Error: {e}")
 
-# ================= LOGIN GATE =================
-if not st.session_state.logged_in:
-    login_page()
-    st.stop()
-
-# ================= AFTER LOGIN =================
-menu = st.sidebar.radio(
-    "📌 Menu",
-    [
-        "📊 Dashboard",
-        "🔍 Search",
-        "🏦 Inward",
-        "📋 Blacklist",
-        "⚙️ System"
-    ]
-)
-
-# Logout
-if st.sidebar.button("Logout"):
-    st.session_state.logged_in = False
-    st.rerun()
-
-# ================= ROUTER =================
-if menu == "📊 Dashboard":
-    dashboard()
-
-elif menu == "🔍 Search":
-    search_transactions()
-
-elif menu == "🏦 Inward":
-    inward()
-
-elif menu == "📋 Blacklist":
-    st.title("📋 Blacklist Module (Coming Soon)")
-
-elif menu == "⚙️ System":
-    st.title("⚙️ System Module (Coming Soon)")
-
 # ================= Search_Transaction =================
 def search_transactions():
     st.title("🔍 Search Transactions")
@@ -226,8 +188,6 @@ def search_transactions():
         st.download_button("📥 Download CSV", csv, "transactions.csv", "text/csv")
     else:
         st.info("No data found / no search result")
-
-
 
 # ================= INWARD =================
 def inward():
@@ -314,3 +274,50 @@ def inward():
 
         except Exception as e:
             st.error(f"Save Error: {e}")
+
+# ================= LOGIN GATE =================
+if not st.session_state.logged_in:
+    login_page()
+    st.stop()
+
+# ================= AFTER LOGIN =================
+menu = st.sidebar.radio(
+    "📌 Menu",
+    [
+        "📊 Dashboard",
+        "🔍 Search",
+        "🏦 Inward",
+        "📋 Blacklist",
+        "⚙️ System"
+    ]
+)
+
+# Logout
+if st.sidebar.button("Logout"):
+    st.session_state.logged_in = False
+    st.rerun()
+
+# ================= ROUTER =================
+if menu == "📊 Dashboard":
+    dashboard()
+
+elif menu == "🔍 Search":
+    if "search_transactions" in globals():
+        search_transactions()
+    else:
+        st.error("Search module not loaded")
+
+elif menu == "🏦 Inward":
+    inward()
+
+elif menu == "📋 Blacklist":
+    st.title("📋 Blacklist Module (Coming Soon)")
+
+elif menu == "⚙️ System":
+    st.title("⚙️ System Module (Coming Soon)")
+
+
+
+
+
+
