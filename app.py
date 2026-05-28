@@ -171,7 +171,7 @@ if not st.session_state.logged_in:
 
 menu = st.sidebar.radio(
     "Menu",
-    ["📊 Dashboard", "🏦 Inward"]
+    ["📊 Dashboard", "🔍 Search", "🏦 Inward"]
 )
 
 if st.sidebar.button("Logout"):
@@ -181,5 +181,48 @@ if st.sidebar.button("Logout"):
 if menu == "📊 Dashboard":
     dashboard()
 
-elif menu == "🏦 Inward":
-    inward()
+elif menu == "🔍 Search":
+
+    st.title("🔍 Search Transactions")
+
+    if supabase is None:
+        st.error("No DB connection")
+        st.stop()
+
+    col1, col2, col3 = st.columns(3)
+
+    with col1:
+        start_date = st.date_input("Start Date")
+
+    with col2:
+        end_date = st.date_input("End Date")
+
+    with col3:
+        search_btn = st.button("Search")
+
+    try:
+        res = supabase.table("inward_transactions").select("*").execute()
+        df = pd.DataFrame(res.data or [])
+
+        if df.empty:
+            st.warning("No data found")
+            st.stop()
+
+        df["created_at"] = pd.to_datetime(df["created_at"])
+        df["Date"] = df["created_at"].dt.date
+
+        filtered = df
+
+        if search_btn:
+            filtered = df[(df["Date"] >= start_date) & (df["Date"] <= end_date)]
+
+        st.subheader("📊 Results")
+        st.metric("Total Transactions", len(filtered))
+        st.dataframe(filtered, use_container_width=True)
+
+        csv = filtered.to_csv(index=False).encode("utf-8")
+        st.download_button("📥 Download CSV", csv, "transactions.csv", "text/csv")
+
+    except Exception as e:
+        st.error(f"Search Error: {e}")
+
