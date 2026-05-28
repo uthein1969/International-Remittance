@@ -1,13 +1,24 @@
 import streamlit as st
+import requests
 
+# ---------------- PAGE CONFIG ----------------
 st.set_page_config(layout="wide")
 
-# ---------------- SESSION ----------------
+# ---------------- SESSION STATE ----------------
 if "logged_in" not in st.session_state:
     st.session_state["logged_in"] = False
 
 if "username" not in st.session_state:
     st.session_state["username"] = ""
+
+# ---------------- SUPABASE REST CONFIG ----------------
+SUPABASE_URL = "https://tjkykxuvzcmctmxxurew.supabase.co"
+SUPABASE_KEY = st.secrets["SUPABASE_KEY"]
+
+headers = {
+    "apikey": SUPABASE_KEY,
+    "Authorization": f"Bearer {SUPABASE_KEY}"
+}
 
 # ---------------- LOGIN ----------------
 if not st.session_state["logged_in"]:
@@ -19,50 +30,48 @@ if not st.session_state["logged_in"]:
 
     if st.button("Login"):
 
+        if not input_user or not input_pass:
+            st.warning("Please enter User ID and Password")
+            st.stop()
+
         try:
-            # 🔥 SAFE MODE: NO COMPLEX CHAIN, NO FORM RERUN ISSUE
-            import requests
+            # 🔥 SAFE REQUEST (LIMIT + SELECT ONLY NEEDED FIELDS)
+            url = f"{SUPABASE_URL}/rest/v1/user_setup?select=user_id,password"
 
-            url = "https://tjkykxuvzcmctmxxurew.supabase.co/rest/v1/user_setup?select=*"
+            res = requests.get(url, headers=headers, timeout=10)
 
-            headers = {
-                "apikey": st.secrets["SUPABASE_KEY"],
-                "Authorization": f"Bearer {st.secrets['SUPABASE_KEY']}"
-            }
+            if res.status_code != 200:
+                st.error(f"API Error: {res.status_code}")
+                st.stop()
 
-            r = requests.get(url, headers=headers)
+            users = res.json()
 
-            users = r.json()
-
-            found = False
-
-            for u in users:
-                if u["user_id"] == input_user and u["password"] == input_pass:
-                    found = True
-                    break
+            # ---------------- AUTH CHECK ----------------
+            found = any(
+                u.get("user_id") == input_user and u.get("password") == input_pass
+                for u in users
+            )
 
             if found:
                 st.session_state["logged_in"] = True
                 st.session_state["username"] = input_user
-                st.success("Login Successful")
-                st.stop()
+                st.success("✅ Login Successful")
+                st.rerun()
             else:
-                st.error("Invalid credentials")
+                st.error("❌ Invalid User ID or Password")
 
-        except Exception as e:
-            st.error(f"Login Error: {e}")
+        except requests.exceptions.RequestException as e:
+            st.error(f"Network Error: {e}")
 
     st.stop()
 
 # ---------------- DASHBOARD ----------------
 st.title("🏠 Dashboard")
-st.success(f"Welcome {st.session_state['username']}")
+st.success(f"Welcome {st.session_state['username']} 👋")
 
 if st.button("Logout"):
-
     st.session_state["logged_in"] = False
     st.session_state["username"] = ""
-
     st.rerun()
 
 # --- ၃။ Main System  ---
