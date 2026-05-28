@@ -146,7 +146,13 @@ if not st.session_state.logged_in:
 
 menu = st.sidebar.radio(
     "📌 Menu",
-    ["📊 Dashboard", "🔍 Search", "🏦 Inward", "📋 Blacklist", "⚙️ System"]
+    [
+        "📊 Dashboard",
+        "🔍 Search",
+        "🏦 Inward",
+        "📋 Blacklist",
+        "⚙️ System"
+    ]
 )
 
 # Logout (SEPARATE - NOT INSIDE ANY IF)
@@ -159,6 +165,19 @@ if menu == "📊 Dashboard":
     dashboard()
 
 elif menu == "🔍 Search":
+    search_transactions()
+
+elif menu == "🏦 Inward":
+    inward()
+
+elif menu == "📋 Blacklist":
+    st.title("Blacklist Module")
+
+elif menu == "⚙️ System":
+    st.title("System Module")
+
+# ================= Search_Transaction =================
+def search_transactions():
     st.title("🔍 Search Transactions")
 
     if supabase is None:
@@ -297,5 +316,6 @@ def inward():
 
         except Exception as e:
             st.error(f"Save Error: {e}")
+
 
 
