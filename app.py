@@ -72,24 +72,20 @@ def dashboard():
     except Exception as e:
         st.error(f"DB Error: {e}")
 
-# ================= ROUTER (IMPORTANT FIX) =================
+# ================= LOGIN GATE =================
 if not st.session_state.logged_in:
-
-    # ONLY LOGIN PAGE
     login_page()
     st.stop()
 
 # ================= AFTER LOGIN ONLY =================
-if st.session_state.logged_in:
+menu = st.sidebar.radio(
+    "📌 Menu",
+    ["📊 Dashboard", "🔍 Search", "🏦 Inward", "📋 Blacklist", "⚙️ System"]
+)
 
-    menu = st.sidebar.radio(
-        "📌 Menu",
-        ["📊 Dashboard", "🔍 Search", "🏦 Inward", "📋 Blacklist", "⚙️ System"]
-    )
-
-    if st.sidebar.button("Logout"):
-        st.session_state.logged_in = False
-        st.rerun()
+if st.sidebar.button("Logout"):
+    st.session_state.logged_in = False
+    st.rerun()
 
     if menu == "📊 Dashboard":
         dashboard()
@@ -101,7 +97,7 @@ elif menu == "🔍 Search":
         st.error("Supabase not connected")
         st.stop()
 
-    # ================= FILTER =================
+    # FILTER UI ALWAYS SHOW
     col1, col2, col3 = st.columns(3)
 
     with col1:
@@ -113,52 +109,37 @@ elif menu == "🔍 Search":
     with col3:
         search_btn = st.button("Search")
 
+    # DEFAULT
     filtered_df = pd.DataFrame()
 
-    # ================= FETCH DATA =================
     try:
-        res = supabase.table("inward_transactions") \
-            .select("*") \
-            .order("created_at", desc=True) \
-            .execute()
-
+        res = supabase.table("inward_transactions").select("*").execute()
         data = res.data or []
-        df = pd.DataFrame(data)
 
-        if not df.empty:
+        if len(data) > 0:
+            df = pd.DataFrame(data)
             df["created_at"] = pd.to_datetime(df["created_at"])
             df["Date"] = df["created_at"].dt.date
 
             if search_btn:
-                mask = (df["Date"] >= start_date) & (df["Date"] <= end_date)
-                filtered_df = df.loc[mask]
-            else:
-                filtered_df = df
+                df = df[(df["Date"] >= start_date) & (df["Date"] <= end_date)]
 
-        else:
-            st.warning("No data found in database")
+            filtered_df = df
 
     except Exception as e:
         st.error(f"Search Error: {e}")
 
-    # ================= DISPLAY =================
+    # ALWAYS SHOW RESULT AREA
+    st.subheader("📊 Results")
+
     if not filtered_df.empty:
-        st.subheader("📊 Results")
-
         st.metric("Total Transactions", len(filtered_df))
-
         st.dataframe(filtered_df, use_container_width=True)
 
         csv = filtered_df.to_csv(index=False).encode("utf-8")
-
-        st.download_button(
-            "📥 Download CSV",
-            data=csv,
-            file_name="transactions.csv",
-            mime="text/csv"
-        )
+        st.download_button("📥 Download CSV", csv, "transactions.csv", "text/csv")
     else:
-        st.info("No results to display (please search or check database)")
+        st.info("No data found / no search result")
 
 
 elif menu == "🏦 Inward":
