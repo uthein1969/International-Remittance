@@ -1,5 +1,4 @@
 import streamlit as st
-import requests
 
 # ---------------- PAGE CONFIG ----------------
 st.set_page_config(layout="wide")
@@ -11,16 +10,13 @@ if "logged_in" not in st.session_state:
 if "username" not in st.session_state:
     st.session_state["username"] = ""
 
-# ---------------- SUPABASE REST CONFIG ----------------
-SUPABASE_URL = "https://tjkykxuvzcmctmxxurew.supabase.co"
-SUPABASE_KEY = st.secrets["SUPABASE_KEY"]
-
-headers = {
-    "apikey": SUPABASE_KEY,
-    "Authorization": f"Bearer {SUPABASE_KEY}"
+# ---------------- DEMO USERS (SAFE TEST) ----------------
+USERS = {
+    "admin": "pass123",
+    "user": "1234"
 }
 
-# ---------------- LOGIN ----------------
+# ---------------- LOGIN PAGE ----------------
 if not st.session_state["logged_in"]:
 
     st.title("🔐 Admin Login System")
@@ -30,38 +26,17 @@ if not st.session_state["logged_in"]:
 
     if st.button("Login"):
 
-        if not input_user or not input_pass:
-            st.warning("Please enter User ID and Password")
-            st.stop()
+        if input_user in USERS and USERS[input_user] == input_pass:
 
-        try:
-            # 🔥 SAFE REQUEST (LIMIT + SELECT ONLY NEEDED FIELDS)
-            url = f"{SUPABASE_URL}/rest/v1/user_setup?select=user_id,password"
+            st.session_state["logged_in"] = True
+            st.session_state["username"] = input_user
 
-            res = requests.get(url, headers=headers, timeout=10)
+            st.success("✅ Login Successful")
 
-            if res.status_code != 200:
-                st.error(f"API Error: {res.status_code}")
-                st.stop()
+            st.rerun()
 
-            users = res.json()
-
-            # ---------------- AUTH CHECK ----------------
-            found = any(
-                u.get("user_id") == input_user and u.get("password") == input_pass
-                for u in users
-            )
-
-            if found:
-                st.session_state["logged_in"] = True
-                st.session_state["username"] = input_user
-                st.success("✅ Login Successful")
-                st.rerun()
-            else:
-                st.error("❌ Invalid User ID or Password")
-
-        except requests.exceptions.RequestException as e:
-            st.error(f"Network Error: {e}")
+        else:
+            st.error("❌ Invalid User ID or Password")
 
     st.stop()
 
@@ -70,8 +45,10 @@ st.title("🏠 Dashboard")
 st.success(f"Welcome {st.session_state['username']} 👋")
 
 if st.button("Logout"):
+
     st.session_state["logged_in"] = False
     st.session_state["username"] = ""
+
     st.rerun()
 
 # --- ၃။ Main System  ---
