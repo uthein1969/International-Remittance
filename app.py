@@ -40,32 +40,27 @@ if not st.session_state["logged_in"]:
         if login_btn:
 
             try:
-                # ✔ SAFE SUPABASE FETCH (NO .eq BUG, NO RERUN CRASH)
+                # ✔ SINGLE SAFE CALL
                 res = supabase.table("user_setup").select("*").execute()
 
                 users = res.data or []
 
-                found = False
+                # ✔ PURE PYTHON CHECK (NO NETWORK CHAOS)
+                user_found = any(
+                    u.get("user_id") == input_user and u.get("password") == input_pass
+                    for u in users
+                )
 
-                for u in users:
-                    if u.get("user_id") == input_user and u.get("password") == input_pass:
-                        found = True
-                        break
-
-                if found:
-
+                if user_found:
                     st.session_state["logged_in"] = True
                     st.session_state["username"] = input_user
-
-                    st.success("✅ Login Successful")
-
-                    st.rerun()
-
+                    st.success("Login Successful")
+                    st.stop()
                 else:
-                    st.error("❌ Invalid User ID or Password")
+                    st.error("Invalid credentials")
 
             except Exception as e:
-                st.error(f"Login Error: {e}")
+                st.error(f"Login Error: {str(e)}")
 
     st.stop()
 
