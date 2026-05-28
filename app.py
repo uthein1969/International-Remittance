@@ -25,3 +25,33 @@ if "logged_in" not in st.session_state:
 
 if "username" not in st.session_state:
     st.session_state.username = ""
+    
+# STEP 2 — LOGIN MODULE (SEPARATE & SAFE)
+def login_page():
+    st.title("🔐 Admin Login")
+
+    user = st.text_input("User ID")
+    pwd = st.text_input("Password", type="password")
+
+    if st.button("Login"):
+
+        if supabase is None:
+            st.error("Supabase not connected")
+            return
+
+        try:
+            res = supabase.table("user_setup").select("*").execute()
+            users = res.data or []
+
+            for u in users:
+                if u["user_id"] == user and u["password"] == pwd:
+                    st.session_state.logged_in = True
+                    st.session_state.username = user
+                    st.rerun()
+                    return
+
+            st.error("Invalid credentials")
+
+        except Exception as e:
+            st.error(f"DB Error: {e}")
+# STEP 3 — DASHBOARD (MINIMUM SAFE VERSION)
