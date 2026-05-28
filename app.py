@@ -8,15 +8,15 @@ import pytz
 from supabase import create_client
 from datetime import datetime
 
-# ---------------- TIMEZONE ----------------
-yangon_tz = pytz.timezone("Asia/Yangon")
-now_yangon = datetime.now(yangon_tz)
-
 # ---------------- SUPABASE ----------------
 url = st.secrets["SUPABASE_URL"]
 key = st.secrets["SUPABASE_KEY"]
 
 supabase = create_client(url, key)
+
+# ---------------- TIMEZONE ----------------
+yangon_tz = pytz.timezone("Asia/Yangon")
+now_yangon = datetime.now(yangon_tz)
 
 # ---------------- SESSION STATE ----------------
 if "logged_in" not in st.session_state:
@@ -40,12 +40,11 @@ if not st.session_state["logged_in"]:
         if login_btn:
 
             try:
-                # ✔ SAFE SUPABASE CALL (NO FILTER BUG)
+                # ✔ SAFE SUPABASE FETCH (NO .eq BUG, NO RERUN CRASH)
                 res = supabase.table("user_setup").select("*").execute()
 
                 users = res.data or []
 
-                # ✔ LOCAL VALIDATION (STABLE)
                 found = False
 
                 for u in users:
@@ -60,14 +59,13 @@ if not st.session_state["logged_in"]:
 
                     st.success("✅ Login Successful")
 
-                    # ✔ SAFE STOP (NO RERUN CRASH)
-                    st.stop()
+                    st.rerun()
 
                 else:
                     st.error("❌ Invalid User ID or Password")
 
             except Exception as e:
-                st.error(f"Login Error: {str(e)}")
+                st.error(f"Login Error: {e}")
 
     st.stop()
 
