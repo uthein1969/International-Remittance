@@ -213,152 +213,109 @@ elif menu == "🔍 Search":
 
 
 elif menu == "🏦 Inward":
-
-    st.title("🏦 Inward Transaction Form")
+    st.title("🏦 Inward Transaction")
 
     if supabase is None:
         st.error("Supabase not connected")
         st.stop()
 
-    import pytz
     from datetime import datetime
 
-    # ================= TIME =================
-    yangon_tz = pytz.timezone("Asia/Yangon")
-    now_yangon = datetime.now(yangon_tz)
+    # ================= LIVE TIME =================
+    now = datetime.now()
+    display_time = now.strftime("%Y-%m-%d %H:%M:%S")
+    save_time = now.strftime("%d%m%Y%H%M%S")  # DDMMYYYYHHMMSS
 
-    # ================= SESSION =================
-    if "show_slip" not in st.session_state:
-        st.session_state.show_slip = False
-
-    if "slip" not in st.session_state:
-        st.session_state.slip = {}
-
-    # ================= LAST TRANSACTION NO =================
-    try:
-        last = supabase.table("inward_transactions") \
-            .select("transaction_no") \
-            .order("created_at", desc=True) \
-            .limit(1).execute()
-
-        if last.data:
-            new_no = str(int(last.data[0]["transaction_no"]) + 1).zfill(4)
-        else:
-            new_no = "0001"
-    except:
-        new_no = "0001"
+    st.info(f"🕒 Current Time: {display_time}")
 
     # ================= FORM =================
-    if not st.session_state.show_slip:
+    with st.form("inward_form", clear_on_submit=True):
 
-        st.subheader("🔵 Receiver Information")
+        st.subheader("🔵 Receiver Info")
+        r_name = st.text_input("Receiver Name")
+        r_nrc = st.text_input("Receiver NRC")
+        r_phone = st.text_input("Phone")
+        r_address = st.text_input("Address")
+        r_state = st.text_input("State")
+        r_withdraw_point = st.text_input("Withdraw Point")
+        r_remark = st.text_area("Remark")
 
-        col1, col2 = st.columns(2)
-        r_name = col1.text_input("Receiver Name")
-        r_nrc = col2.text_input("Receiver NRC")
-
-        r_phone = st.text_input("Receiver Phone")
-        r_address = st.text_input("Receiver Address")
-
-        col3, col4 = st.columns(2)
-        r_state = col3.text_input("State / Division")
-        r_point = col4.text_input("Withdraw Point")
-
-        st.divider()
-
-        st.subheader("🟢 Sender Information")
-
+        st.subheader("🟢 Sender Info")
         s_name = st.text_input("Sender Name")
         s_id = st.text_input("Sender ID / Passport")
 
+        # ✅ Country FIRST, then Branch (FIXED)
         s_country = st.text_input("Country")
 
-        # 👉 Branch moved under Country (your request)
         branch = st.selectbox(
             "Branch",
             ["Yangon", "Mandalay", "Nay Pyi Taw"]
         )
 
-        col5, col6, col7 = st.columns(3)
+        currency = st.selectbox("Currency", ["THB", "USD", "SGD"])
 
-        currency = col5.selectbox("Currency", ["THB", "USD", "SGD"])
-        amount = col6.number_input("Amount", min_value=0.0, format="%.2f")
-        rate = col7.number_input("MMK Rate", min_value=0.0, format="%.2f")
+        amount = st.number_input("Amount", min_value=0.0)
+        mmk_rate = st.number_input("MMK Rate", min_value=0.0)
+        mmk_allowance = st.number_input("MMK Allowance", min_value=0.0)
 
-        allowance = st.number_input("MMK Allowance", min_value=0.0)
+        usd_equiv = st.number_input("USD Equivalent", min_value=0.0)
 
-        total_mmk = (amount * rate) + allowance
+        total_mmk = (amount * mmk_rate) + mmk_allowance
 
-        st.success(f"💰 Total MMK: {total_mmk:,.2f}")
+        st.markdown(f"### 💰 Total MMK: {total_mmk:,.2f}")
 
-        trans_no = st.text_input("Transaction No", value=new_no)
+        submit = st.form_submit_button("💾 Save Transaction")
 
-        # ================= SAVE =================
-        if st.button("💾 Save Transaction", type="primary"):
+    # ================= SAVE =================
+    if submit:
 
-            try:
-                # blacklist check
-                bl = supabase.table("blacklist") \
-                    .select("*") \
-                    .eq("nrcno", r_nrc) \
-                    .execute()
+        try:
+            # 🔴 BLACKLIST CHECK
+            check = supabase.table("blacklist") \
+                .select("*") \
+                .eq("nrcno", r_nrc) \
+                .execute()
 
-                if bl.data:
-                    st.error("❌ This customer is BLACKLISTED")
-                    st.stop()
+            if check.data:
+                st.error("❌ This user is BLACKLISTED")
+                st.stop()
 
-                data = {
-                    "transaction_no": trans_no,
-                    "branch": branch,
+            data = {
+                "transaction_no": save_time,
+                "branch": branch,
+                "r_name": r_name,
+                "r_nrc": r_nrc,
+                "r_phone": r_phone,
+                "r_address": r_address,
+                "r_state": r_state,
+                "r_withdraw_point": r_withdraw_point,
+                "r_remark": r_remark,
 
-                    "created_at": now_yangon.isoformat(),  # ✅ DATE TIME FIX
+                "s_name": s_name,
+                "s_id": s_id,
+                "s_country": s_country,
 
-                    "r_name": r_name,
-                    "r_nrc": r_nrc,
-                    "r_phone": r_phone,
-                    "r_address": r_address,
-                    "r_state": r_state,
-                    "r_withdraw_point": r_point,
+                "currency": currency,
+                "amount": amount,
+                "mmk_rate": mmk_rate,
+                "mmk_allowance": mmk_allowance,
+                "usd_equiv": usd_equiv,
+                "total_mmk": total_mmk,
 
-                    "s_name": s_name,
-                    "s_id": s_id,
-                    "s_country": s_country,
+                "created_at": display_time
+            }
 
-                    "currency": currency,
-                    "amount": amount,
-                    "mmk_rate": rate,
-                    "mmk_allowance": allowance,
-                    "total_mmk": total_mmk
-                }
+            res = supabase.table("inward_transactions").insert(data).execute()
 
-                res = supabase.table("inward_transactions").insert(data).execute()
+            if res.data:
+                st.success("✅ Transaction Saved Successfully")
+                st.code(f"Transaction No: {save_time}")
 
-                if res.data:
-                    st.session_state.slip = data
-                    st.session_state.show_slip = True
-                    st.rerun()
+            else:
+                st.error("❌ Save Failed")
 
-            except Exception as e:
-                st.error(f"Save Error: {e}")
-
-    # ================= SLIP =================
-    else:
-        sd = st.session_state.slip
-
-        st.success("Transaction Saved 🎉")
-
-        st.subheader("📄 Payout Slip")
-
-        st.write("Transaction No:", sd["transaction_no"])
-        st.write("Branch:", sd["branch"])
-        st.write("Receiver:", sd["r_name"])
-        st.write("Sender:", sd["s_name"])
-        st.write("Total MMK:", f"{sd['total_mmk']:,.2f}")
-
-        if st.button("🔄 New Transaction"):
-            st.session_state.show_slip = False
-            st.session_state.slip = {}
-            st.rerun()
+        except Exception as e:
+            st.error(f"Database Error: {e}")
 
 elif menu == "📋 Blacklist":
     st.title("Blacklist Module")
