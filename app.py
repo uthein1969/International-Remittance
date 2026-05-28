@@ -4,7 +4,6 @@ import streamlit as st
 st.set_page_config(layout="wide")
 
 # ---------------- IMPORTS ----------------
-import pandas as pd
 import pytz
 from supabase import create_client
 from datetime import datetime
@@ -31,7 +30,6 @@ if not st.session_state["logged_in"]:
 
     st.title("🔐 Admin Login System")
 
-    # ---------------- LOGIN FORM ----------------
     with st.form("login_form"):
 
         input_user = st.text_input("User ID")
@@ -42,18 +40,16 @@ if not st.session_state["logged_in"]:
         if login_btn:
 
             try:
-                # ✔ SAFE QUERY (NO .eq BUG)
+                # ✔ SAFE SUPABASE CALL (NO FILTER BUG)
                 res = supabase.table("user_setup").select("*").execute()
 
                 users = res.data or []
 
+                # ✔ LOCAL VALIDATION (STABLE)
                 found = False
 
-                for user in users:
-                    if (
-                        user.get("user_id") == input_user
-                        and user.get("password") == input_pass
-                    ):
+                for u in users:
+                    if u.get("user_id") == input_user and u.get("password") == input_pass:
                         found = True
                         break
 
@@ -64,14 +60,14 @@ if not st.session_state["logged_in"]:
 
                     st.success("✅ Login Successful")
 
-                    # ✔ SAFE STOP (no rerun crash)
+                    # ✔ SAFE STOP (NO RERUN CRASH)
                     st.stop()
 
                 else:
                     st.error("❌ Invalid User ID or Password")
 
             except Exception as e:
-                st.error(f"Login Error: {e}")
+                st.error(f"Login Error: {str(e)}")
 
     st.stop()
 
