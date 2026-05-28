@@ -214,57 +214,58 @@ elif menu == "🔍 Search":
 
 elif menu == "🏦 Inward":
     st.title("🏦 Inward Transaction")
+    
+    # 🕒 LIVE TIME SHOW
+    st.info(f"🕒 {now_yangon.strftime('%d-%m-%Y %H:%M:%S')}")
 
     if supabase is None:
         st.error("Supabase not connected")
-        st.stop()
+        return
 
-    from datetime import datetime
+    # AUTO TRANSACTION NO
+    try:
+        last = supabase.table("inward_transactions") \
+            .select("transaction_no") \
+            .order("created_at", desc=True) \
+            .limit(1) \
+            .execute()
 
-    # ================= LIVE TIME =================
-    now = datetime.now()
-    display_time = now.strftime("%Y-%m-%d %H:%M:%S")
-    save_time = now.strftime("%d%m%Y%H%M%S")  # DDMMYYYYHHMMSS
+        if last.data:
+            new_no = str(int(last.data[0]["transaction_no"]) + 1).zfill(4)
+        else:
+            new_no = "0001"
+    except:
+        new_no = "0001"
 
-    st.info(f"🕒 Current Time: {display_time}")
 
     # ================= FORM =================
-    with st.form("inward_form", clear_on_submit=True):
+    with st.form("inward_form"):
+        branch = st.selectbox("Branch", ["Yangon", "Mandalay", "NPT"])
 
-        st.subheader("🔵 Receiver Info")
-        r_name = st.text_input("Receiver Name")
-        r_nrc = st.text_input("Receiver NRC")
+        st.subheader("🔵 Receiver")
+        r_name = st.text_input("Name")
+        r_nrc = st.text_input("NRC")
         r_phone = st.text_input("Phone")
         r_address = st.text_input("Address")
         r_state = st.text_input("State")
-        r_withdraw_point = st.text_input("Withdraw Point")
-        r_remark = st.text_area("Remark")
+        r_point = st.text_input("Withdraw Point")
 
-        st.subheader("🟢 Sender Info")
+        st.subheader("🟢 Sender")
         s_name = st.text_input("Sender Name")
-        s_id = st.text_input("Sender ID / Passport")
-
-        # ✅ Country FIRST, then Branch (FIXED)
+        s_id = st.text_input("ID/Passport")
         s_country = st.text_input("Country")
 
-        branch = st.selectbox(
-            "Branch",
-            ["Yangon", "Mandalay", "Nay Pyi Taw"]
-        )
-
         currency = st.selectbox("Currency", ["THB", "USD", "SGD"])
+        amount = st.number_input("Amount", 0.0)
 
-        amount = st.number_input("Amount", min_value=0.0)
-        mmk_rate = st.number_input("MMK Rate", min_value=0.0)
-        mmk_allowance = st.number_input("MMK Allowance", min_value=0.0)
+        mmk_rate = st.number_input("MMK Rate", 0.0)
+        mmk_allow = st.number_input("MMK Allowance", 0.0)
 
-        usd_equiv = st.number_input("USD Equivalent", min_value=0.0)
+        total_mmk = (amount * mmk_rate) + mmk_allow
 
-        total_mmk = (amount * mmk_rate) + mmk_allowance
+        st.markdown(f"### 💰 Total: {total_mmk:,.2f} MMK")
 
-        st.markdown(f"### 💰 Total MMK: {total_mmk:,.2f}")
-
-        submit = st.form_submit_button("💾 Save Transaction")
+        submitted = st.form_submit_button("💾 Save")
 
     # ================= SAVE =================
     if submit:
@@ -281,45 +282,50 @@ elif menu == "🏦 Inward":
                 st.stop()
 
             data = {
-                "transaction_no": save_time,
+                "transaction_no": new_no,
                 "branch": branch,
                 "r_name": r_name,
                 "r_nrc": r_nrc,
                 "r_phone": r_phone,
                 "r_address": r_address,
                 "r_state": r_state,
-                "r_withdraw_point": r_withdraw_point,
-                "r_remark": r_remark,
-
+                "r_withdraw_point": r_point,
                 "s_name": s_name,
                 "s_id": s_id,
                 "s_country": s_country,
-
                 "currency": currency,
                 "amount": amount,
                 "mmk_rate": mmk_rate,
-                "mmk_allowance": mmk_allowance,
-                "usd_equiv": usd_equiv,
+                "mmk_allowance": mmk_allow,
                 "total_mmk": total_mmk,
-
-                "created_at": display_time
+                "created_at": now_yangon.strftime("%d%m%Y%H%M%S")
             }
 
-            res = supabase.table("inward_transactions").insert(data).execute()
+            supabase.table("inward_transactions").insert(data).execute()
 
-            if res.data:
-                st.success("✅ Transaction Saved Successfully")
-                st.code(f"Transaction No: {save_time}")
-
-            else:
-                st.error("❌ Save Failed")
+            st.success("Saved Successfully")
+            st.rerun()
 
         except Exception as e:
-            st.error(f"Database Error: {e}")
+            st.error(f"Save Error: {e}")
+    # ================= ROUTER =================
+if not st.session_state.logged_in:
+    login()
+else:
+    menu = st.sidebar.radio(
+        "Menu",
+        ["📊 Dashboard", "🏦 Inward"]
+    )
 
-elif menu == "📋 Blacklist":
-    st.title("Blacklist Module")
+    if st.sidebar.button("Logout"):
+        st.session_state.logged_in = False
+        st.rerun()
 
-elif menu == "⚙️ System":
-    st.title("System Module")
+    if menu == "📊 Dashboard":
+        dashboard()
+
+    elif menu == "🏦 Inward":
+        inward()
+
+
 
