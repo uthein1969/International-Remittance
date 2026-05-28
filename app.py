@@ -36,7 +36,7 @@ def login_page():
     if st.button("Login"):
         if supabase is None:
             st.error("Supabase not connected")
-            return
+            
 
         try:
             res = supabase.table("user_setup").select("*").execute()
