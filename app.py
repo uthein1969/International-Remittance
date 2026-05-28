@@ -1,7 +1,7 @@
 import pandas as pd
 import streamlit as st
 import pytz
-from supabase import create_client, Client
+from supabase import create_client
 from datetime import datetime
 
 st.set_page_config(layout="wide")

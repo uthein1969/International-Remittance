@@ -1,5 +1,6 @@
-streamlit
-pandas
-pytz
-supabase==2.3.4
+streamlit==1.32.2
+supabase==2.0.3
 httpx==0.24.1
+httpcore==0.17.3
+pandas==2.2.2
+pytz==2024.1
