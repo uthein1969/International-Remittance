@@ -298,17 +298,4 @@ def inward():
         except Exception as e:
             st.error(f"Save Error: {e}")
 
-# ================= ROUTER (ONLY ONCE) =================
-if not st.session_state.logged_in:
-    login_page()
-    st.stop()
-
-menu = st.sidebar.radio(
-    "Menu",
-    ["📊 Dashboard", "🔍 Search", "🏦 Inward"]
-)
-
-if st.sidebar.button("Logout"):
-    st.session_state.logged_in = False
-    st.rerun()
 
