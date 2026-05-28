@@ -4,54 +4,83 @@ import pytz
 from supabase import create_client
 from datetime import datetime
 
+# ---------------- PAGE CONFIG ----------------
 st.set_page_config(layout="wide")
 
-yangon_tz = pytz.timezone('Asia/Yangon')
+# ---------------- TIMEZONE ----------------
+yangon_tz = pytz.timezone("Asia/Yangon")
 now_yangon = datetime.now(yangon_tz)
 
-st.title("Supabase Test")
-
+# ---------------- SUPABASE CONNECTION ----------------
 try:
     url = st.secrets["SUPABASE_URL"]
     key = st.secrets["SUPABASE_KEY"]
 
     supabase = create_client(url, key)
 
-    st.success("✅ Connected!")
-
 except Exception as e:
     st.error(f"Database Connection Error: {e}")
     st.stop()
 
+# ---------------- SESSION STATE ----------------
+if "logged_in" not in st.session_state:
+    st.session_state["logged_in"] = False
 
-if not st.session_state['logged_in']:
+if "username" not in st.session_state:
+    st.session_state["username"] = ""
+
+# ---------------- LOGIN PAGE ----------------
+if not st.session_state["logged_in"]:
+
     st.title("🔐 Admin Login System")
-    
+
     with st.form("login_form"):
+
         input_user = st.text_input("User ID")
         input_pass = st.text_input("Password", type="password")
+
         submit_btn = st.form_submit_button("Login")
-        
+
         if submit_btn:
+
             try:
-                # 💡 ဒေတာဘေ့စ်မှ User စာရင်းကို စစ်ဆေးခြင်း
-                res = supabase.table("user_setup")\
-                    .select("*")\
-                    .eq("user_id", input_user)\
-                    .eq("password", input_pass)\
+                # Check user from Supabase
+                res = (
+                    supabase.table("user_setup")
+                    .select("*")
+                    .eq("user_id", input_user)
+                    .eq("password", input_pass)
                     .execute()
-                
+                )
+
                 if res.data:
-                    st.session_state['logged_in'] = True
-                    st.session_state['username'] = input_user
+
+                    st.session_state["logged_in"] = True
+                    st.session_state["username"] = input_user
+
                     st.success("✅ Login Successful!")
-                    st.rerun() 
+                    st.rerun()
+
                 else:
                     st.error("❌ Invalid User ID or Password")
+
             except Exception as e:
                 st.error(f"Login Error: {e}")
-    
+
     st.stop()
+
+# ---------------- MAIN APP ----------------
+st.title("🏠 Dashboard")
+
+st.success(f"Welcome {st.session_state['username']}")
+
+# Logout Button
+if st.button("Logout"):
+
+    st.session_state["logged_in"] = False
+    st.session_state["username"] = ""
+
+    st.rerun()
 
 # --- ၃။ Main System  ---
 st.sidebar.success("Logged In ✅")
