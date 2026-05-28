@@ -12,10 +12,10 @@ st.success("App is now stable (no DB, no network)")
 st.write("If you see this → Streamlit is OK")
 
 # ---------------- SUPABASE INIT ----------------
-SUPABASE_URL = st.secrets["SUPABASE_URL"]
-SUPABASE_KEY = st.secrets["SUPABASE_KEY"]
+# SUPABASE_URL = st.secrets["SUPABASE_URL"]
+# SUPABASE_KEY = st.secrets["SUPABASE_KEY"]
 
-supabase = create_client(SUPABASE_URL, SUPABASE_KEY)
+# supabase = create_client(SUPABASE_URL, SUPABASE_KEY)
 
 # ---------------- TIME ----------------
 yangon_tz = pytz.timezone("Asia/Yangon")
