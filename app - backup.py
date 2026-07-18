@@ -13,6 +13,26 @@ SUPABASE_KEY = st.secrets.get("SUPABASE_KEY")
 
 supabase = create_client(SUPABASE_URL, SUPABASE_KEY) if SUPABASE_URL and SUPABASE_KEY else None
 
+# ================= AUDIT LOGGING SYSTEM =================
+def log_action(action, details, status="SUCCESS"):
+    """စနစ်အတွင်း လုပ်ဆောင်သမျှကို Supabase system_logs table ထဲသို့ လှမ်းမှတ်ပေးသော စနစ်"""
+    if supabase is None:
+        return
+    try:
+        # လက်ရှိ session ထဲရှိ ဝန်ထမ်းအချက်အလက်ကို ယူပါသည်
+        current_user = st.session_state.get("username", "ANONYMOUS")
+        current_role = st.session_state.get("user_role", "unknown")
+        
+        supabase.table("system_logs").insert({
+            "username": current_user,
+            "user_role": current_role,
+            "action": action,
+            "details": details,
+            "status": status
+        }).execute()
+    except Exception as e:
+        print(f"Logging Failed: {e}") # စနစ်အနှောင့်အယှက်မဖြစ်စေရန် error သာပြထားပါမည်
+
 # ================= TIME =================
 yangon = pytz.timezone("Asia/Yangon")
 now_yangon = datetime.now(yangon)
@@ -25,34 +45,7 @@ if "username" not in st.session_state:
     st.session_state.username = ""
 
 if "user_role" not in st.session_state:
-    st.session_state.user_role = "user"
-
-# ================= AUDIT LOGGING SYSTEM =================
-# app.py ထဲက log_action ကို အောက်ပါအတိုင်း ပြင်ပါ
-def log_action(action, details, status="SUCCESS"):
-    """စနစ်အတွင်း လုပ်ဆောင်သမျှကို Supabase system_logs table ထဲသို့ လှမ်းမှတ်ပေးသော စနစ်"""
-    if supabase is None:
-        return
-    try:
-        current_user = st.session_state.get("username", "ANONYMOUS")
-        current_role = st.session_state.get("user_role", "unknown")
-        
-        # 🎯 ဒေတာသွင်းပြီး ရလာတဲ့ result ကို စစ်ဆေးရန် ပြင်ဆင်ခြင်း
-        res = supabase.table("system_logs").insert({
-            "username": current_user,
-            "user_role": current_role,
-            "action": action,
-            "details": details,
-            "status": status
-        }).execute()
-        
-        # ဒေတာဝင်မဝင် Console မှာ စောင့်ကြည့်ရန်
-        print(f"✅ Log Success: {res.data}")
-        
-    except Exception as e:
-        # 🎯 Error တက်လျှင် Browser မျက်နှာပြင်ပေါ်တွင် ဒေါင်ခနဲ တန်းပြခိုင်းလိုက်ခြင်း
-        st.error(f"🚨 Supabase Log Error: {str(e)}")
-        print(f"❌ Log Failed: {e}")
+    st.session_state.user_role = "user"  # Default role သတ်မှတ်ချက်
 
 # ================= LOGIN =================
 def login_page():
@@ -67,17 +60,24 @@ def login_page():
             return
 
         try:
+            # Database မှ userid, password နှင့်အတူ role ကော်လံကိုပါ ဆွဲဖတ်သည်
             res = supabase.table("user_setup").select("*").execute()
 
             for u in res.data or []:
                 if u["user_id"] == user and u["password"] == pwd:
                     st.session_state.logged_in = True
+
+                    # Login အောင်မြင်မှုအား မှတ်တမ်းတင်ခြင်း
+                    log_action("LOGIN", f"User '{st.session_state.username}' logged in successfully.", "SUCCESS")
+
                     st.session_state.username = user
+                    # 🎯 ဝန်ထမ်း၏ Role ကို စနစ်မှတ်ဉာဏ်ထဲသို့ ထည့်သွင်းမှတ်သားခြင်း
                     st.session_state.user_role = u.get("role", "user").lower().strip()
                     st.success(f"Welcome {user} ({st.session_state.user_role.upper()})")
                     st.rerun()
                     return
-
+                    # Login ကျရှုံးမှုအား မှတ်တမ်းတင်ခြင်း
+                    log_action("LOGIN", f"Failed login attempt for User ID: '{st.session_state.username}'.", "FAIL")  
             st.error("Invalid credentials")
 
         except Exception as e:
@@ -86,13 +86,14 @@ def login_page():
 # ================= DASHBOARD =================
 def dashboard():
     st.title("📊 Transaction Dashboard")
-    st.info(f"👤 ဝန်ထမ်းအကောင့်: **{st.session_state.username}** | Role: **{st.session_state.user_role.upper()}**")
+    st.info(f"👤 User: **{st.session_state.username}** | Role: **{st.session_state.user_role.upper()}**")
 
     if supabase is None:
         st.error("Supabase not connected")
         return
 
     try:
+        # နောက်ဆုံးထည့်ထားတာ အပေါ်ဆုံးပေါ်အောင် စီပြီး ဆွဲထုတ်ပါသည်
         res = supabase.table("inward_transactions").select("*").order("created_at", desc=True).execute()
         data = res.data or []
 
@@ -108,6 +109,7 @@ def dashboard():
         df["Month"] = df["created_at_dt"].dt.to_period("M")
         df["Year"] = df["created_at_dt"].dt.year
 
+        # 🎯 ဇယားတွင် ပေါ်စေချင်သော ကော်လံများစာရင်း (ဒီထဲမှာ 'id' ကို ချန်လှပ်ထားခဲ့ပါသည်)
         display_cols = [
             "transaction_no", "branch", "r_name", "r_nrc", "r_phone", 
             "r_address", "r_state", "r_withdraw_point", "s_name", 
@@ -126,8 +128,10 @@ def dashboard():
             st.metric("Transactions", len(daily_df))
             st.metric("Total MMK", f"{daily_df['total_mmk'].sum():,.2f}")
 
+            # 🎯 ADMIN အတွက် Checkbox စနစ်
             if st.session_state.user_role == "admin":
-                st.caption("💡 အချက်အလက်အပြည့်အစုံ ပြင်ဆင်ရန် သို့မဟုတ် ဖျက်ရန် ဘယ်ဘက်အစွန်းရှိ Checkbox တွင် ရွေးချယ်ပါဗျာ။")
+                st.caption("💡 select by Checkbox ")
+                # display_cols သုံးထား၍ 'id' ကို Hide ပေးထားသော်လည်း နောက်ကွယ်တွင် target_id ကို ယူနိုင်ရန် ၎င်း df ကို သုံးပါသည်
                 event = st.dataframe(daily_df[display_cols], use_container_width=True, selection_mode="single-row", on_select="rerun")
                 selected_rows = event.selection.rows
             else:
@@ -142,6 +146,7 @@ def dashboard():
             monthly_df = df[df["Month"].astype(str) == selected_month]
             st.metric("Transactions", len(monthly_df))
             st.metric("Total MMK", f"{monthly_df['total_mmk'].sum():,.2f}")
+            # 'id' ကော်လံကို ကွက်တိ ဖယ်ထုတ်ပြသခြင်း
             st.dataframe(monthly_df[display_cols], use_container_width=True)
 
         # ================= YEARLY =================
@@ -152,20 +157,24 @@ def dashboard():
             yearly_df = df[df["Year"] == selected_year]
             st.metric("Transactions", len(yearly_df))
             st.metric("Total MMK", f"{yearly_df['total_mmk'].sum():,.2f}")
+            # 'id' ကော်လံကို ကွက်တိ ဖယ်ထုတ်ပြသခြင်း
             st.dataframe(yearly_df[display_cols], use_container_width=True)
 
         # ================= ADMIN INWARD ENTRY FORM FOR EDIT & DELETE =================
         if st.session_state.user_role == "admin" and len(selected_rows) > 0:
             st.divider()
             
+            # ရွေးချယ်လိုက်သော အတန်း၏ မူရင်းဒေတာများကို ဆွဲထုတ်ခြင်း
             row_idx = selected_rows[0]
             target_data = daily_df.iloc[row_idx]
-            target_id = target_data["id"] 
+            target_id = target_data["id"] # 💡 နောက်ကွယ်တွင် id ကို သုံး၍ Update/Delete လုပ်ပါမည်
             target_no = target_data["transaction_no"]
 
             st.subheader(f"🛠️ Admin Entry Form (Editing Transaction No: {target_no})")
             
+            # မူရင်း ငွေလွှဲ Form ပုံစံအတိုင်း Layout ဖန်တီးခြင်း
             with st.form("admin_edit_entry_form"):
+                # Branch Selectbox (မူရင်းတန်ဖိုးအတိုင်း ရွေးထားပေးခြင်း)
                 branches = ["Yangon", "Mandalay", "NPT"]
                 edit_branch = st.selectbox("Branch", branches, index=branches.index(target_data["branch"]) if target_data["branch"] in branches else 0)
 
@@ -190,82 +199,50 @@ def dashboard():
                 edit_rate = st.number_input("MMK Rate", value=float(target_data["mmk_rate"]), min_value=0.0)
                 edit_allow = st.number_input("MMK Allowance", value=float(target_data["mmk_allowance"]), min_value=0.0)
 
+                # ကိန်းဂဏန်းတွက်ချက်မှုအသစ်
                 new_total = (edit_amount * edit_rate) + edit_allow
                 st.markdown(f"### 💰 New Calculated Total: {new_total:,.2f} MMK")
 
+                # ခလုတ်များ
                 col_btn1, col_btn2 = st.columns(2)
                 with col_btn1:
-                    submit_edit = st.form_submit_button("💾 Save Changes (အကုန်ပြင်ဆင်မည်)", type="primary")
+                    submit_edit = st.form_submit_button("💾 Save Changes", type="secondary")
                 with col_btn2:
-                    submit_delete = st.form_submit_button("🗑️ Delete This Transaction (ဖြတ်ပိုင်းဖျက်မည်)")
+                    submit_delete = st.form_submit_button("🗑️ Delete This Transaction", type="secondary")
 
-            # --- Update & Logging (Inward Trans) ---
+            # --- ပြင်ဆင်ချက်ကို ဒေတာဘေ့စ်ထဲ သိမ်းဆည်းခြင်း ---
             if submit_edit:
                 try:
-                    # ၁။ ပြောင်းလဲမှု ရှိမရှိ စစ်ဆေးရန်အတွက် အကွက်တစ်ခုချင်းစီ နှိုင်းယှဉ်ခြင်း
-                    changes = []
+                    supabase.table("inward_transactions").update({
+                        "branch": edit_branch,
+                        "r_name": edit_r_name,
+                        "r_nrc": edit_r_nrc,
+                        "r_phone": edit_r_phone,
+                        "r_address": edit_r_address,
+                        "r_state": edit_r_state,
+                        "r_withdraw_point": edit_point,
+                        "s_name": edit_s_name,
+                        "s_id": edit_s_id,
+                        "s_country": edit_s_country,
+                        "currency": edit_currency,
+                        "amount": edit_amount,
+                        "mmk_rate": edit_rate,
+                        "mmk_allowance": edit_allow,
+                        "total_mmk": new_total
+                    }).eq("id", target_id).execute()
                     
-                    if str(target_data["branch"]) != str(edit_branch):
-                        changes.append(f"Branch: {target_data['branch']} -> {edit_branch}")
-                    if str(target_data["r_name"]) != str(edit_r_name):
-                        changes.append(f"Receiver Name: {target_data['r_name']} -> {edit_r_name}")
-                    if str(target_data["r_nrc"]) != str(edit_r_nrc):
-                        changes.append(f"Receiver NRC: {target_data['r_nrc']} -> {edit_r_nrc}")
-                    if str(target_data["r_phone"]) != str(edit_r_phone):
-                        changes.append(f"Receiver Phone: {target_data['r_phone']} -> {edit_r_phone}")
-                    if str(target_data["r_address"]) != str(edit_r_address):
-                        changes.append(f"Receiver Address: {target_data['r_address']} -> {edit_r_address}")
-                    if str(target_data["r_state"]) != str(edit_r_state):
-                        changes.append(f"Receiver State: {target_data['r_state']} -> {edit_r_state}")
-                    if str(target_data["r_withdraw_point"]) != str(edit_point):
-                        changes.append(f"Withdraw Point: {target_data['r_withdraw_point']} -> {edit_point}")
-                    if str(target_data["s_name"]) != str(edit_s_name):
-                        changes.append(f"Sender Name: {target_data['s_name']} -> {edit_s_name}")
-                    if str(target_data["s_id"]) != str(edit_s_id):
-                        changes.append(f"Sender ID: {target_data['s_id']} -> {edit_s_id}")
-                    if str(target_data["s_country"]) != str(edit_s_country):
-                        changes.append(f"Sender Country: {target_data['s_country']} -> {edit_s_country}")
-                    if str(target_data["currency"]) != str(edit_currency):
-                        changes.append(f"Currency: {target_data['currency']} -> {edit_currency}")
-                    if float(target_data["amount"]) != float(edit_amount):
-                        changes.append(f"Amount: {target_data['amount']} -> {edit_amount}")
-                    if float(target_data["mmk_rate"]) != float(edit_rate):
-                        changes.append(f"Rate: {target_data['mmk_rate']} -> {edit_rate}")
-                    if float(target_data["mmk_allowance"]) != float(edit_allow):
-                        changes.append(f"Allowance: {target_data['mmk_allowance']} -> {edit_allow}")
-
-                    # ၂။ 🎯 တကယ်ပြောင်းလဲမှု ရှိမှသာ Supabase သို့သိမ်းပြီး Logs မှတ်မည့် Logic
-                    if changes:
-                        supabase.table("inward_transactions").update({
-                            "branch": edit_branch, "r_name": edit_r_name, "r_nrc": edit_r_nrc,
-                            "r_phone": edit_r_phone, "r_address": edit_r_address, "r_state": edit_r_state,
-                            "r_withdraw_point": edit_point, "s_name": edit_s_name, "s_id": edit_s_id,
-                            "s_country": edit_s_country, "currency": edit_currency, "amount": edit_amount,
-                            "mmk_rate": edit_rate, "mmk_allowance": edit_allow, "total_mmk": new_total
-                        }).eq("id", target_id).execute()
-                        
-                        # ပြောင်းလဲသွားသည့် အကွက်များကို စာသားအဖြစ် စီတန်းခြင်း
-                        log_details = f"Updated Trans No: {target_no} | Changes: [" + " | ".join(changes) + "]"
-                        log_action("EDIT_TRANSACTION", log_details, "SUCCESS")
-                        
-                        st.success(f"🎉 Transaction No: {target_no} ၏ အချက်အလက်များကို ပြင်ဆင်ပြီးပါပြီ။")
-                        st.rerun()
-                    else:
-                        st.info("💡 မည်သည့်ဒေတာမှ ပြောင်းလဲခြင်း မရှိသောကြောင့် မှတ်တမ်းမတင်ပါ။")
-                        
+                    st.success(f"🎉 Transaction No: {target_no} updated successfully")
+                    st.rerun()
                 except Exception as e:
-                    log_action("EDIT_TRANSACTION", f"Failed to update Trans No: {target_no}. Error: {str(e)}", "FAIL")
                     st.error(f"Update Entry Error: {e}")
 
-            # --- Delete & Logging ---
+            # --- ဒေတာကို အပြီးဖျက်ပစ်ခြင်း ---
             if submit_delete:
                 try:
                     supabase.table("inward_transactions").delete().eq("id", target_id).execute()
-                    log_action("DELETE_TRANSACTION", f"Deleted Transaction No: {target_no} (Receiver: {edit_r_name})", "SUCCESS")
-                    st.success(f"🚀 Transaction No: {target_no} ကို ဖျက်ဆီးပြီးပါပြီ။")
+                    st.success(f"🚀 Transaction No: {target_no} deleted successfully")
                     st.rerun()
                 except Exception as e:
-                    log_action("DELETE_TRANSACTION", f"Failed to delete Trans No: {target_no}. Error: {str(e)}", "FAIL")
                     st.error(f"Delete Entry Error: {e}")
 
         # ================= SUMMARY CARDS =================
@@ -287,11 +264,19 @@ def search_transactions():
         st.error("Supabase not connected")
         st.stop()
 
+    # FILTER UI ALWAYS SHOW
     col1, col2, col3 = st.columns(3)
-    with col1: start_date = st.date_input("Start Date")
-    with col2: end_date = st.date_input("End Date")
-    with col3: search_btn = st.button("Search")
 
+    with col1:
+        start_date = st.date_input("Start Date")
+
+    with col2:
+        end_date = st.date_input("End Date")
+
+    with col3:
+        search_btn = st.button("Search")
+
+    # DEFAULT
     filtered_df = pd.DataFrame()
 
     try:
@@ -311,11 +296,13 @@ def search_transactions():
     except Exception as e:
         st.error(f"Search Error: {e}")
 
+    # ALWAYS SHOW RESULT AREA
     st.subheader("📊 Results")
 
     if not filtered_df.empty:
         st.metric("Total Transactions", len(filtered_df))
         st.dataframe(filtered_df, use_container_width=True)
+
         csv = filtered_df.to_csv(index=False).encode("utf-8")
         st.download_button("📥 Download CSV", csv, "transactions.csv", "text/csv")
     else:
@@ -326,24 +313,33 @@ def inward():
     st.title("🏦 Inward Transaction")
     st.info(f"🕒 {now_yangon.strftime('%d-%m-%Y %H:%M:%S')}")
 
+    # 🎯 SECURITY CHECK: ရိုးရိုး user ဖြစ်ပါက ဝင်ခွင့်မပြုပါ (Only View)
     if st.session_state.user_role == "user":
-        st.warning("⚠️ စနစ်လုံခြုံရေးအရ သင့်တွင် ငွေလွှဲအချက်အလက်သစ်များ ထည့်သွင်းခွင့်မရှိပါ။")
+        st.warning("⚠️ စနစ်လုံခြုံရေးအရ သင့်တွင် ငွေလွှဲအချက်အလက်သစ်များ ထည့်သွင်းခွင့် (Permission) မရှိပါ။ ဒေတာများကို Dashboard နှင့် Search တွင်သာ ကြည့်ရှုနိုင်ပါသည်။")
         return
 
     if supabase is None:
         st.error("No DB connection")
         return
 
+    # AUTO NO
     try:
-        last = supabase.table("inward_transactions").select("transaction_no").order("created_at", desc=True).limit(1).execute()
+        last = supabase.table("inward_transactions") \
+            .select("transaction_no") \
+            .order("created_at", desc=True) \
+            .limit(1) \
+            .execute()
+
         new_no = "0001"
         if last.data:
             new_no = str(int(last.data[0]["transaction_no"]) + 1).zfill(4)
+
     except:
         new_no = "0001"
 
     with st.form("inward_form"):
         branch = st.selectbox("Branch", ["Yangon", "Mandalay", "NPT"])
+
         st.subheader("Receiver")
         r_name = st.text_input("Name")
         r_nrc = st.text_input("NRC")
@@ -363,7 +359,9 @@ def inward():
         allow = st.number_input("MMK Allowance", 0.0)
 
         total = (amount * rate) + allow
+
         st.markdown(f"### 💰 Total: {total:,.2f}")
+
         submitted = st.form_submit_button("Save")
 
     if submitted:
@@ -372,7 +370,7 @@ def inward():
 
             if check.data:
                 st.error("❌ BLACKLISTED")
-                log_action("TRANSACTION_BLOCKED", f"Blocked Inward Trans for Blacklisted NRC: {r_nrc}", "FAIL")
+                log_action("TRANSACTION_BLOCKED", f"Transaction blocked. Receiver NRC '{r_nrc}' is BLACKLISTED.", "FAIL")
                 return
 
             supabase.table("inward_transactions").insert({
@@ -394,13 +392,12 @@ def inward():
                 "total_mmk": total,
                 "created_at": now_yangon.strftime("%d%m%Y%H%M%S")
             }).execute()
-
-            log_action("ADD_TRANSACTION", f"Saved Transaction No: {new_no} (Total: {total} MMK)", "SUCCESS")
+            log_action("ADD_TRANSACTION", f"Saved Transaction No: {new_no} (Amount: {amount} {currency})", "SUCCESS")
             st.success("Saved Successfully")
             st.rerun()
 
         except Exception as e:
-            log_action("ADD_TRANSACTION", f"Failed to save Transaction. Error: {str(e)}", "FAIL")
+            log_action("ADD_TRANSACTION", f"Failed to save transaction. Error: {str(e)}", "FAIL")
             st.error(f"Save Error: {e}")
 
 # ================= LOGIN GATE =================
@@ -409,19 +406,24 @@ if not st.session_state.logged_in:
     st.stop()
 
 # ================= AFTER LOGIN (ROLE-BASED MENU) =================
+# Role အလိုက် ဘေးဘား Menu များကို စိစစ်ခွဲခြားပြသခြင်း
 menu_options = ["📊 Dashboard", "🔍 Search"]
 
+# super သို့မဟုတ် admin ဖြစ်မှသာ Inward နှင့် Blacklist မီနူးများ ပြသမည်
 if st.session_state.user_role in ["super", "admin"]:
     menu_options.append("🏦 Inward")
     menu_options.append("📋 Blacklist")
 
+# admin သီးသန့်သာ System setting ကို မြင်တွေ့ခွင့်ရှိမည်
 if st.session_state.user_role == "admin":
     menu_options.append("⚙️ System")
 
 menu = st.sidebar.radio("📌 Menu", menu_options)
 
+# Logout ခလုတ်
 if st.sidebar.button("Logout"):
     st.session_state.logged_in = False
+    log_action("LOGOUT", f"User '{st.session_state.username}' logged out.", "SUCCESS")
     st.session_state.user_role = "user"
     st.rerun()
 
@@ -430,7 +432,10 @@ if menu == "📊 Dashboard":
     dashboard()
 
 elif menu == "🔍 Search":
-    search_transactions()
+    if "search_transactions" in globals():
+        search_transactions()
+    else:
+        st.error("Search module not loaded")
 
 elif menu == "🏦 Inward":
     inward()
@@ -460,9 +465,11 @@ elif menu == "📋 Blacklist":
         else:
             db_nrc_codes = [f"{i}/" for i in range(1, 15)]
 
-        # ================= ADD NEW BLACKLIST RECORD (SUPER & ADMIN ONLY) =================
+        # ================= (၁) ADD NEW BLACKLIST RECORD (SUPER & ADMIN ONLY) =================
+        # 🎯 Super နှင့် Admin ဖြစ်မှသာ အချက်အလက်အသစ် ထည့်သွင်းခွင့်ပြုမည်
         if st.session_state.user_role in ["super", "admin"]:
             st.subheader("➕ Add New Blacklist Record")
+            
             id_type = st.selectbox("ID Type *", ["NRC", "Passport/Business License (PB)"])
             
             nrc_code = "12/"
@@ -529,48 +536,56 @@ elif menu == "📋 Blacklist":
                                 "mobile_number": mobile_number,
                                 "remark": remark if remark else "Blacklisted User"
                             }).execute()
-                            
-                            log_action("ADD_BLACKLIST", f"Added '{bl_name}' ({full_nrc}) to Blacklist", "SUCCESS")
-                            st.success(f"🎉 '{bl_name}' အား ထည့်သွင်းပြီးပါပြီ။")
+                            log_action("ADD_BLACKLIST", f"Added '{bl_name}' ({full_nrc}) to blacklist.", "SUCCESS")
+                            st.success(f"🎉 '**{bl_name}**' ({full_nrc}) အား Blacklist စာရင်းထဲသို့ အောင်မြင်စွာ ထည့်သွင်းပြီးပါပြီဗျာ။")
                             st.balloons()
                             st.rerun()
                     except Exception as e:
-                        log_action("ADD_BLACKLIST", f"Failed to add '{bl_name}' to Blacklist. Error: {str(e)}", "FAIL")
                         st.error(f"Blacklist Save Error: {e}")
         else:
-            st.warning("💡 သင့်တွင် Blacklist အသစ် ထည့်သွင်းခွင့်မရှိပါ။")
+            st.warning("💡 သင့်တွင် Blacklist အသစ် ထည့်သွင်းခွင့် (Add New Permission) မရှိပါ။")
 
-        # ================= SHOW BLACKLIST DATA & HIDE ID =================
+        # ================= (၂) SHOW BLACKLIST DATA & HIDE ID =================
         st.divider()
         st.subheader("📋 Current Blacklist (လက်ရှိ ပိတ်ပင်ထားသူများစာရင်း)")
         
+        # ဇယားတွင် ပေါ်စေချင်သော ကော်လံများစာရင်း ('id' ကော်လံကို Hide ရန် ဤစာရင်းတွင် ချန်လှပ်ထားပါသည်)
         bl_display_cols = ["id_type", "nrcno", "name", "bank_account", "address", "mobile_number", "remark"]
-        selected_bl_rows = []
         
+        selected_bl_rows = []
         try:
             bl_res = supabase.table("blacklist").select("*").order("name").execute()
             if bl_res.data:
                 bl_df = pd.DataFrame(bl_res.data)
-                formatted_df = bl_df[bl_display_cols].copy()
-                formatted_df.columns = ["ID Type", "ID/NRC Number", "Full Name", "Bank Account", "Address", "Mobile No", "Remark"]
                 
+                # 🎯 ADMIN ဖြစ်ပါက Checkbox ရွေးချယ်နိုင်သော စနစ် ထည့်သွင်းခြင်း
                 if st.session_state.user_role == "admin":
                     st.caption("💡 အချက်အလက်များအား ပြင်ဆင်ရန် သို့မဟုတ် ဖျက်ရန် ဘယ်ဘက်အစွန်းရှိ Checkbox တွင် ရွေးချယ်ပါဗျာ။")
+                    
+                    # ကော်လံခေါင်းစဉ်များ သတ်မှတ်ပြသခြင်း
+                    formatted_df = bl_df[bl_display_cols].copy()
+                    formatted_df.columns = ["ID Type", "ID/NRC Number", "Full Name", "Bank Account", "Address", "Mobile No", "Remark"]
+                    
                     event = st.dataframe(formatted_df, use_container_width=True, selection_mode="single-row", on_select="rerun")
                     selected_bl_rows = event.selection.rows
                 else:
+                    # Super နှင့် User များအတွက် သာမန်ဇယားသာ ပြသမည်
+                    formatted_df = bl_df[bl_display_cols].copy()
+                    formatted_df.columns = ["ID Type", "ID/NRC Number", "Full Name", "Bank Account", "Address", "Mobile No", "Remark"]
                     st.dataframe(formatted_df, use_container_width=True)
             else:
                 st.info("Blacklist စာရင်း မရှိသေးပါ။")
         except Exception as e:
             st.error(f"Load Blacklist Error: {e}")
 
-        # ================= ADMIN EDIT & DELETE FORM (ADMIN ONLY) =================
+        # ================= (၃) ADMIN EDIT & DELETE FORM (ADMIN ONLY) =================
+        # 🎯 Admin ဖြစ်ပြီး Checkbox တွင် အမှန်ခြစ် ရွေးချယ်ထားမှသာ ပြင်ဆင်/ဖျက်ဆီးမည့် Entry Form ပေါ်လာပါမည်
         if st.session_state.user_role == "admin" and len(selected_bl_rows) > 0:
             st.divider()
+            
             row_idx = selected_bl_rows[0]
             target_bl_data = bl_df.iloc[row_idx]
-            target_bl_id = target_bl_data["srno"] 
+            target_bl_id = target_bl_data["srno"] # 💡 Supabase Primary Key 'srno' ကို သုံး၍ ညွှန်းပါသည်
             target_bl_nrc = target_bl_data["nrcno"]
 
             st.subheader(f"🛠️ Admin Blacklist Entry Form (Editing: {target_bl_nrc})")
@@ -585,32 +600,17 @@ elif menu == "📋 Blacklist":
                 edit_bl_remark = st.text_input("Remark", value=str(target_bl_data["remark"]) if target_bl_data["remark"] else "")
 
                 col_bl_btn1, col_bl_btn2 = st.columns(2)
-                with col_bl_btn1: submit_bl_edit = st.form_submit_button("💾 Save Changes (အကုန်ပြင်ဆင်မည်)", type="primary")
-                with col_bl_btn2: submit_bl_delete = st.form_submit_button("🗑️ Delete This Record (စာရင်းမှဖျက်မည်)")
+                with col_bl_btn1:
+                    submit_bl_edit = st.form_submit_button("💾 Save Changes (အကုန်ပြင်ဆင်မည်)", type="primary")
+                with col_bl_btn2:
+                    submit_bl_delete = st.form_submit_button("🗑️ Delete This Record (စာရင်းမှဖျက်မည်)")
 
-            # --- ပြင်ဆင်ချက်သိမ်းဆည်းခြင်း (Blacklist) ---
+            # --- ပြင်ဆင်ချက်သိမ်းဆည်းခြင်း ---
             if submit_bl_edit:
-                try:
-                    # ၁။ ပြောင်းလဲမှု ရှိမရှိ တစ်ကွက်ချင်းစီ တိုက်စစ်ခြင်း
-                    bl_changes = []
-                    
-                    if str(target_bl_data["id_type"]) != str(edit_bl_id_type):
-                        bl_changes.append(f"ID Type: {target_bl_data['id_type']} -> {edit_bl_id_type}")
-                    if str(target_bl_data["nrcno"]) != str(edit_bl_nrcno):
-                        bl_changes.append(f"ID/NRC: {target_bl_data['nrcno']} -> {edit_bl_nrcno}")
-                    if str(target_bl_data["name"]) != str(edit_bl_name):
-                        bl_changes.append(f"Name: {target_bl_data['name']} -> {edit_bl_name}")
-                    if str(target_bl_data["bank_account"]) != str(edit_bl_bank):
-                        bl_changes.append(f"Bank Acc: {target_bl_data['bank_account']} -> {edit_bl_bank}")
-                    if str(target_bl_data["address"]) != str(edit_bl_addr):
-                        bl_changes.append(f"Address: {target_bl_data['address']} -> {edit_bl_addr}")
-                    if str(target_bl_data["mobile_number"]) != str(edit_bl_mobile):
-                        bl_changes.append(f"Mobile: {target_bl_data['mobile_number']} -> {edit_bl_mobile}")
-                    if str(target_bl_data["remark"]) != str(edit_bl_remark):
-                        bl_changes.append(f"Remark: {target_bl_data['remark']} -> {edit_bl_remark}")
-
-                    # ၂။ 🎯 တကယ်ပြောင်းလဲမှု ရှိမှသာ သိမ်းဆည်းပြီး Logs မှတ်ခြင်း
-                    if bl_changes:
+                if not edit_bl_name or not edit_bl_nrcno:
+                    st.error("❌ Name နှင့် ID/NRC Number ကို မဖြစ်မနေ ဖြည့်သွင်းပေးရပါမည်။")
+                else:
+                    try:
                         supabase.table("blacklist").update({
                             "id_type": edit_bl_id_type,
                             "nrcno": edit_bl_nrcno,
@@ -620,78 +620,85 @@ elif menu == "📋 Blacklist":
                             "mobile_number": edit_bl_mobile,
                             "remark": edit_bl_remark
                         }).eq("srno", target_bl_id).execute()
-                        
-                        log_details = f"Updated Blacklist for '{edit_bl_name}' | Changes: [" + " | ".join(bl_changes) + "]"
-                        log_action("EDIT_BLACKLIST", log_details, "SUCCESS")
-                        
-                        st.success("🎉 Blacklist အချက်အလက်များကို အောင်မြင်စွာ ပြင်ဆင်ပြီးပါပြီ။")
+                        log_action("EDIT_BLACKLIST", f"Updated blacklist record for srno: {target_bl_id} ({edit_bl_name})", "SUCCESS")
+                        st.success(f"🎉 '{edit_bl_name}' ၏ Blacklist အချက်အလက်အားလုံးကို အောင်မြင်စွာ ပြင်ဆင်ပြီးပါပြီဗျာ။")
                         st.rerun()
-                    else:
-                        st.info("💡 မည်သည့်ဒေတာမှ ပြောင်းလဲခြင်း မရှိသောကြောင့် မှတ်တမ်းမတင်ပါ။")
-                        
-                except Exception as e:
-                    log_action("EDIT_BLACKLIST", f"Failed to update Blacklist for srno {target_bl_id}. Error: {str(e)}", "FAIL")
-                    st.error(f"Blacklist Update Error: {e}")
+                    except Exception as e:
+                        st.error(f"Blacklist Update Error: {e}")
 
+            # --- စာရင်းမှ အပြီးဖျက်ပစ်ခြင်း ---
             if submit_bl_delete:
                 try:
                     supabase.table("blacklist").delete().eq("srno", target_bl_id).execute()
-                    log_action("DELETE_BLACKLIST", f"Deleted '{edit_bl_name}' ({target_bl_nrc}) from Blacklist", "SUCCESS")
-                    st.success("🚀 ဖျက်ဆီးပြီးပါပြီ။")
+                    log_action("DELETE_BLACKLIST", f"Deleted blacklist record for srno: {target_bl_id} ({edit_bl_name})", "SUCCESS")
+                    st.success(f"🚀 '{edit_bl_name}' အား Blacklist စာရင်းမှ အပြီးတိုင် ဖျက်ဆီးပြီးပါပြီဗျာ။")
                     st.rerun()
                 except Exception as e:
-                    log_action("DELETE_BLACKLIST", f"Failed to delete Blacklist srno {target_bl_id}. Error: {str(e)}", "FAIL")
                     st.error(f"Blacklist Delete Error: {e}")
 
 elif menu == "⚙️ System":
     st.title("⚙️ System Control (Admin Only)")
-    st.info(f"👤 Admin အကောင့်: **{st.session_state.username}** အဖြစ် ဝင်ရောက်ထားပါသည်။")
+    st.info(f"👤 Admin အကောင့်: **{st.session_state.username}** အဖြစ် ဝင်ရောက်ထားပါသည်။ ဝန်ထမ်းအသစ်များကို ဤနေရာတွင် စနစ်တကျ စာရင်းသွင်းနိုင်ပါသည်။")
 
     if supabase is None:
         st.error("Supabase not connected")
     else:
-        # ================= ADD NEW USER =================
+        # ================= ADD NEW USER FORM =================
         st.subheader("➕ Add New System User")
+        
         with st.form("add_user_form", clear_on_submit=True):
             col1, col2 = st.columns(2)
+            
             with col1:
-                new_userid = st.text_input("User ID", placeholder="ဥပမာ - thura_oo").strip()
-                new_password = st.text_input("Password", type="password", placeholder="••••••••")
+                new_userid = st.text_input("User ID (ဝန်ထမ်းအကောင့်အမည်)", placeholder="ဥပမာ - thura_oo").strip()
+                new_password = st.text_input("Password (လျှို့ဝှက်နံပါတ်)", type="password", placeholder="••••••••")
+            
             with col2:
-                new_role = st.selectbox("Select User Role", ["user", "super", "admin"])
-                st.write(""); st.write("")
+                # 🎯 Admin အလိုရှိသည့်အတိုင်း Role ကို ရွေးချယ်ခိုင်းသည့်နေရာ
+                new_role = st.selectbox("Select User Role (လုပ်ပိုင်ခွင့်အဆင့်)", ["user", "super", "admin"])
+                st.write("") # နေရာလွတ်လေး ခံပေးခြင်း
+                st.write("")
                 submit_user = st.form_submit_button("💾 Save New User")
 
+        # ================= SAVE TO SUPABASE =================
         if submit_user:
+            # လိုအပ်သော အချက်အလက်များ ဖြည့်မဖြည့် စစ်ဆေးခြင်း
             if not new_userid or not new_password:
-                st.error("❌ User ID နှင့် Password ကို ဖြည့်သွင်းပေးပါ။")
+                st.error("❌ ဝန်ထမ်းအကောင့်အမည် (User ID) နှင့် လျှို့ဝှက်နံပါတ် (Password) ကို မဖြစ်မနေ ဖြည့်စွက်ပေးရပါမည်။")
             else:
                 try:
+                    # ၁။ User ID ရှိနှင့်ပြီးသား ဟုတ်မဟုတ် အရင်စစ်ဆေးခြင်း (Duplicate Check)
                     existing_user = supabase.table("user_setup").select("user_id").eq("user_id", new_userid).execute()
+                    
                     if existing_user.data:
-                        st.error("❌ အကောင့်အမည် ရှိနှင့်ပြီးသား ဖြစ်နေပါသည်။")
+                        st.error(f"❌ အကောင့်အမည် '**{new_userid}**' သည် စနစ်ထဲတွင် ရှိနှင့်ပြီးသား ဖြစ်နေပါသည်။ အခြားအမည်တစ်ခု ပြောင်းသုံးပေးပါ။")
                     else:
+                        # ၂။ အချက်အလက်အသစ်ကို Supabase user_setup table ထဲသို့ သိမ်းဆည်းခြင်း
                         supabase.table("user_setup").insert({
                             "user_id": new_userid,
                             "password": new_password,
                             "role": new_role
                         }).execute()
-                        log_action("ADD_NEW_USER", f"Created new account '{new_userid}' as role '{new_role}'", "SUCCESS")
-                        st.success(f"🎉 အကောင့်အသစ် '{new_userid}' ကို သိမ်းဆည်းပြီးပါပြီ။")
-                        st.balloons()
+                        
+                        st.success(f"🎉 အကောင့်အသစ် '**{new_userid}**' ({new_role.upper()}) ကို အောင်မြင်စွာ သိမ်းဆည်းပြီးပါပြီဗျာ။")
+                        st.balloons() # အောင်မြင်ကြောင်း အောင်ပွဲခံမိုးပျံပူဖောင်းလေးများ လွှတ်ပေးခြင်း
+                        
                 except Exception as e:
-                    log_action("ADD_NEW_USER", f"Failed to create user '{new_userid}'. Error: {str(e)}", "FAIL")
                     st.error(f"Save User Error: {e}")
 
         # ================= EXISTING USERS LIST =================
         st.divider()
-        st.subheader("👥 Current System Users")
+        st.subheader("👥 Current System Users (လက်ရှိ ဝန်ထမ်းစာရင်း)")
         try:
+            # လက်ရှိရှိနေသော အကောင့်များကို ဇယားဖြင့် ပြန်ပြပေးခြင်း
             user_res = supabase.table("user_setup").select("user_id", "role").execute()
             if user_res.data:
                 user_df = pd.DataFrame(user_res.data)
-                user_df.columns = ["User ID", "Role"]
+                # ကော်လံခေါင်းစဉ်များကို သပ်သပ်ရပ်ရပ် ဖြစ်အောင် ပြောင်းလဲခြင်း
+                user_df.columns = ["User ID (အကောင့်အမည်)", "Role (လုပ်ပိုင်ခွင့်ဆင့်)"]
                 st.dataframe(user_df, use_container_width=True)
+            else:
+                st.info("စနစ်ထဲတွင် ဝန်ထမ်းစာရင်း မရှိသေးပါ။")
         except Exception as e:
             st.error(f"Load Users Error: {e}")
 
@@ -699,17 +706,16 @@ elif menu == "⚙️ System":
         st.divider()
         st.subheader("📜 System Audit Logs (စနစ်လှုပ်ရှားမှု မှတ်တမ်း)")
         try:
+            # နောက်ဆုံးဖြစ်ပျက်ခဲ့တာတွေ အပေါ်ဆုံးကပြရန် created_at အလိုက် Descending စီသည်
             log_res = supabase.table("system_logs").select("*").order("created_at", desc=True).limit(100).execute()
             if log_res.data:
                 log_df = pd.DataFrame(log_res.data)
-                
-                # 🎯 ပြဿနာ (၁) ဖြေရှင်းချက်: UTC အချိန်မှ မြန်မာစံတော်ချိန် (Yangon Time) သို့ ပြောင်းလဲခြင်း
-                log_df["created_at"] = pd.to_datetime(log_df["created_at"])
-                log_df["created_at"] = log_df["created_at"].dt.tz_convert("Asia/Yangon").dt.strftime("%Y-%m-%d %H:%M:%S")
-                
+                # သပ်ရပ်သော ကော်လံများ ရွေးချယ်ပြသခြင်း
                 show_log_df = log_df[["created_at", "username", "user_role", "action", "details", "status"]]
-                show_log_df.columns = ["Timestamp (မြန်မာစံတော်ချိန်)", "User ID", "Role", "Action", "Details (အသေးစိတ်)", "Status (ရလဒ်)"]
-                st.dataframe(show_log_df, width="stretch") # width="stretch" သို့ ပြောင်းလဲပြီးဖြစ်သည်
+                show_log_df.columns = ["Timestamp (အချိန်)", "User ID", "Role", "Action", "Details (အသေးစိတ်)", "Status (ရလဒ်)"]
+                
+                # Success ကို အစိမ်းရောင်၊ Fail ကို အနီရောင်ပြလိုလျှင် သုံးနိုင်သည်
+                st.dataframe(show_log_df, use_container_width=True)
             else:
                 st.info("မှတ်တမ်းများ မရှိသေးပါ။")
         except Exception as e:
